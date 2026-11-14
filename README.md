@@ -89,3 +89,16 @@ xcodebuild test -project Sidewatch.xcodeproj -scheme SidewatchTests \
   -clonedSourcePackagesDirPath /tmp/SidewatchPackages \
   -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO
 ```
+
+## Release
+
+Release builds use manual signing: Developer ID Application with the Developer ID profiles "Sidewatch Main" (app, `system-extension.install`) and "Sidewatch Monitor" (extension, `endpoint-security.client`). Xcode's automatic signing cannot create Developer ID profiles for the Endpoint Security entitlement, so these profiles are created in the developer portal. Debug builds keep automatic Apple Development signing.
+
+Store notarization credentials once, then build a notarized, stapled DMG in `build/release`:
+
+```sh
+xcrun notarytool store-credentials sidewatch-notary --apple-id <apple-id> --team-id YOURTEAMID
+Scripts/release.sh
+```
+
+When archiving in Xcode instead, distribute with Custom → Developer ID and choose manual signing with the profiles above; Direct Distribution requests automatic signing and fails. Users must move Sidewatch to `/Applications` before macOS will activate the system extension.
