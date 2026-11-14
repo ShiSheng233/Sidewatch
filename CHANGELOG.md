@@ -9,5 +9,10 @@
 - Added IPv4/IPv6 endpoint identity, including recovery of Darwin's embedded IPv6 interface scope.
 - Added exact audit-token SIGTERM/SIGKILL control with boot, start-time, execution-version, and effective-UID validation. Signal outcomes and audit-persistence failures remain separate.
 - Verified native queries and signaling using isolated real listeners, stale identity/token rejection, empty-argument privacy boundaries, process exit, and successful port rebinding.
+- Replaced the SwiftUI template with an AppKit host: sidebar, five pages, global search, timeline filters and paging, inspector with launch chain, related file activity and read-only Git diff, protection rule editor with acknowledged mode state, and Stop/Force Quit with confirmation.
+- Added leftover-service detection (confirmed agent exit plus a process still observed alive), shared/uncertain attribution flags, Dock badge, and notifications.
+- Added `Localizable.xcstrings` with English plural variants for every user-visible string.
+- Fixed a crash when the monitor service was unreachable: XPC callbacks no longer inherit main-actor isolation.
+- Fixed restored history reporting exited executions as unknown, EndpointSecurity linking, and the error code returned for unpreparable rule paths.
 
-The current checkpoint precedes the AppKit interface. Live ES interception and protection require signed, authorized runtime verification; native checks do not establish successful ES enforcement.
+Live ES interception and protection require signed, authorized runtime verification; offline tests and native checks do not establish successful ES enforcement.

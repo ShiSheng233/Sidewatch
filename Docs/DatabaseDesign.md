@@ -90,7 +90,7 @@ Run one DatabaseMigrator before starting writes. Published migration identifiers
 
 Register one initial migration, `v1_initial`, containing all tables, constraints, indexes, storeID, activity AUTOINCREMENT, and the initial Record Only configuration. The complete current schema is the first shipped version; do not preserve artificial migration stages from development. Future released schema changes introduce new immutable migrations.
 
-New databases apply v1_initial once; reopening v1 is idempotent. Future upgrades apply only genuinely new published migrations, with GRDB transactions and FK checking. Verify empty initialization, reopening, failed-initial-migration rollback, and refusal of future schemas. Failure preserves the database and reports Storage Unavailable instead of erasing data. Never enable eraseDatabaseOnSchemaChange, including development configurations that may encounter real history.
+New databases apply v1_initial once; reopening v1 is idempotent. Future upgrades apply only new published migrations, with GRDB transactions and FK checking. Verify empty initialization, reopening, failed-initial-migration rollback, and refusal of future schemas. Failure preserves the database and reports Storage Unavailable instead of erasing data. Never enable eraseDatabaseOnSchemaChange, including development configurations that may encounter real history.
 
 Before a migration rebuilds a large table, create one equally protected migration backup with GRDB's backup API, then remove it after verified success. Do not copy only a live .sqlite file and omit its WAL. Migrations/backups never run in authorization callbacks.
 
@@ -117,7 +117,7 @@ Implementation acceptance:
 - Paginated reads remain complete during collection; reconnect by commit watermark; isolate users by UID.
 - Clear history, insert a new event, then reconnect with the previous watermark: the new event must be delivered. Reject cursors with a different storeID and request a reset.
 - Verify WAL, reopening, concurrent reads/writes, and checkpointing using real files. An in-memory database cannot prove these properties.
-- After retention removes old activity, live-service origins remain queryable. Full disk/queue overflow produce truthful gaps without AUTH waiting for persistence.
+- After retention removes old activity, live-service origins remain queryable. Full disk/queue overflow produce accurate gap records without AUTH waiting for persistence.
 - Run these checks against GRDB/SQLite actually linked in the extension. API/documentation checks and the system CLI alone do not establish an implemented or benchmarked store.
 
 ## References

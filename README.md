@@ -2,7 +2,7 @@
 
 A macOS project for connecting AI agent activity to projects, commands, file operations, background processes, and listening ports.
 
-Current checkpoint: backend source and native process/port verification, before step 5. Full backend tests and host/extension builds were deferred by the user; [BackendHandover.md](Docs/BackendHandover.md) records commands and unverified scope. The host still runs its original template.
+Current checkpoint: AppKit host and backend implemented; `SidewatchTests` passes and the host builds with the extension embedded. Live Endpoint Security collection and protection still need a signed, entitled installation; see [BackendHandover.md](Docs/BackendHandover.md).
 
 ## Architecture
 
@@ -38,6 +38,22 @@ Directories are root-owned and private. The host does not open these databases d
 
 Operational diagnostics use macOS Unified Logging with subsystem `dev.shisheng.Sidewatch`. Agent commands, file paths, rule matches, audit tokens, event payloads, SQL arguments, and file contents must not be written to these logs. Activity history belongs in the database.
 
+## Interface
+
+Pure AppKit with MVVM (`Sidewatch/ViewModels`, `Sidewatch/Views`); no SwiftUI. The window has a sidebar (Agents, Timeline, Ports & Services, Leftover Services, Protection Rules), a content list, and an inspector showing the launch chain, process details, related file activity, and a Git diff for the selected file. Search accepts port numbers, commands, project paths, and file paths. The toolbar shows only the mode the extension has acknowledged.
+
+Without the extension, the app shows current processes and ports readable by your account, recognizes running agent CLIs from the process list (labeled Snapshot), and states that history and protection are inactive. Stop and Force Quit require the extension's live identity for the exact process. Leftover reminders use the Dock badge and, if permitted, a notification.
+
+All user-visible text is in `Sidewatch/Localizable.xcstrings` (English, with plural variants). Animations follow the system Reduce Motion setting.
+
+Debug builds can render every page in light and dark appearance to PNG files using real data, then quit:
+
+```sh
+SIDEWATCH_UI_SNAPSHOT_DIR=/tmp/sidewatch-ui \
+  /tmp/SidewatchDerivedData/Build/Products/Debug/Sidewatch.app/Contents/MacOS/Sidewatch
+# Add -NSDoubleLocalizedStrings YES to check text expansion.
+```
+
 ## Design and verification
 
 - [Implementation plan](Docs/ImplementationPlan.md)
@@ -46,6 +62,15 @@ Operational diagnostics use macOS Unified Logging with subsystem `dev.shisheng.S
 - [Backend handover and deferred verification](Docs/BackendHandover.md)
 
 The project has a standalone `SidewatchTests` scheme for provenance, protection modes, rule matching, and database regression checks. Runtime validation of ES interception requires the entitlement and approvals above; compilation and offline tests do not prove successful system enforcement.
+
+## Build
+
+```sh
+xcodebuild build -project Sidewatch.xcodeproj -scheme Sidewatch \
+  -configuration Debug -destination 'platform=macOS,arch=arm64' \
+  -derivedDataPath /tmp/SidewatchDerivedData \
+  -clonedSourcePackagesDirPath /tmp/SidewatchPackages CODE_SIGNING_ALLOWED=NO
+```
 
 ## Backend verification checkpoint
 

@@ -1,12 +1,30 @@
 # Backend Handover
 
-This checkpoint covers backend source, native process/port services, and the existing API surface. The host entry point and view remain the original template. The API reference is [UIBuilderInterfaces.md](UIBuilderInterfaces.md); it contains signatures and contracts rather than a UI implementation plan.
+This checkpoint covers backend source, native process/port services, and the existing API surface. The AppKit host that consumes it is described in the README. The API reference is [UIBuilderInterfaces.md](UIBuilderInterfaces.md); it contains signatures and contracts rather than a UI implementation plan.
 
 ## Verification boundary
 
-The user explicitly deferred **backend test execution and host/system-extension builds** for this handover. Those commands have not been run against the final integrated backend. Added regression tests are source additions, not passing-test evidence.
+The deferred backend test run and host/system-extension build were later executed (see "Deferred-check results" below). Live Endpoint Security behavior still requires an entitled, signed, approved installation.
 
-Checks already observed before that instruction:
+## Deferred-check results
+
+| Check | Result |
+| --- | --- |
+| `SidewatchTests` (command below) | 121 tests, 0 failures, 0 skipped, including the host projection and Git diff tests added with the UI. |
+| `Sidewatch` scheme, unsigned | Builds; `dev.shisheng.Sidewatch.Monitor.systemextension` is embedded under `Contents/Library/SystemExtensions`, its Info.plist declares `NSEndpointSecurityMachServiceName` `dev.shisheng.Sidewatch.Monitor`, and the extension links `libEndpointSecurity`, `libbsm`, and system `libsqlite3`. |
+
+Fixes found by that run:
+
+- EndpointSecurity is linked with `-lEndpointSecurity`; the SDK provides a library, not a framework.
+- Restored executions keep a recorded `exited` state; only running rows restore as `unknown`. Previously every restored row became `unknown`, so completed history could look possibly live after reopening.
+- `MonitorConnection` XPC error, reply, interruption, and invalidation closures are explicitly `@Sendable`. They had inherited main-actor isolation and trapped when XPC called them on its own queue, for example whenever the extension was not reachable.
+- Rule-preparation failures return `rule_path_unavailable` or `rule_target_mismatch` instead of `storage_unavailable`.
+- Agent recognition was checked against executable paths and arguments read from real running processes. Claude Code's native installer resolves `claude` to `~/.local/share/claude/versions/<version>`, so it was not recognized; definitions now carry `installDirectoryComponents` (Claude Code: `claude/versions`). `omp` was added as a default definition. `argv[0]` is still never used as evidence. `v1_initial` now seeds the initial configuration from `AgentDefinition.defaults` instead of a hardcoded copy that had already drifted from the code.
+- Test-only compile fixes and one test race (`testConcurrentMutationsForOneUserSerialize` now waits for the first mutation to actually hold its pause). One assertion that stored running rows read back as `running` was corrected to the documented `unknown`.
+
+Unsigned builds are ad-hoc signed without entitlements and cannot establish a valid installation. Apple's naming requirements for the ES Mach service should be confirmed during the first signed installation.
+
+Checks observed before that run:
 
 | Check | Observed result |
 | --- | --- |
@@ -48,13 +66,13 @@ The independent reviewer used the configured **slow** model role. Its eight find
 7. PID/version mappings growing across exec churn.
 8. Full in-memory graphs recreating history after clear/retention.
 
-The source corrections address provenance routing, startup reconciliation, bounded AUTH acquisition/evaluation, strict path decoding, truthful failure gaps, subscription acknowledgment, index retirement, and synchronized storage/memory cleanup. Unconfirmed policy transitions expose no active mode/revision and remain fail-open; only the installed, acknowledged policy can participate in authorization.
+The source corrections address provenance routing, startup reconciliation, bounded AUTH acquisition/evaluation, strict path decoding, accurate failure gaps, subscription acknowledgment, index retirement, and synchronized storage/memory cleanup. Unconfirmed policy transitions expose no active mode/revision and remain fail-open; only the installed, acknowledged policy can participate in authorization.
 
 A startup snapshot can remain the canonical session root with unresolved version 0, while the fresh ES execution is associated with the same session. Fresh tokens come only from the ES message. Observed exit/image replacement closes or retires the corresponding startup root; no missing exec event is invented. Observed exec timestamps are distinguished from startup process-creation baselines.
 
 `MonitorSnapshot.liveExecutions` supplies token-stripped, current-user ES identities for eligible services outside the Agent history graph. Native version-0 process rows alone do not establish a signal authority.
 
-Regression sources include policy/truncation/arbitration, inactive activation, routing, startup promotion and reopening, identity/index bounds, retention/ingestion maintenance, capture completeness, and a real link-local IPv6 socket. They still require the deferred test run below.
+Regression sources include policy/truncation/arbitration, inactive activation, routing, startup promotion and reopening, identity/index bounds, retention/ingestion maintenance, capture completeness, and a real link-local IPv6 socket. They pass in the test run recorded under "Deferred-check results".
 
 ## Deferred backend test command
 
@@ -70,7 +88,7 @@ xcodebuild test -project Sidewatch.xcodeproj -scheme SidewatchTests \
   -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO
 ```
 
-No current full-suite pass is claimed. The suite must establish that the final ES, storage, native, and transport sources compile and that their regressions pass together.
+This command produced the passing result recorded under "Deferred-check results". Rerun it after backend changes; a past pass does not cover later edits.
 
 ## Deferred host and extension build
 
@@ -109,6 +127,6 @@ These remain unverified:
 
 ES messages do not provide argv for every process metadata observation. A node/bun script Agent first seen through file activity can remain unidentified until native polling or restored metadata supplies its arguments. Chat titles/task contents and file contents are not provided by this backend API.
 
-The app currently has no automatic activation/connection call wired into its template lifecycle. ExtensionManager and MonitorConnection are implemented services; launching the template alone does not exercise them.
+The AppKit host now queries extension state at launch, connects when the OS reports the extension enabled, and retries with backoff. Installation remains an explicit user action.
 
 The backend review baseline before module commits is `fda707b3a78f8af7945ce7a8c90ea2cabc16dd0d`.

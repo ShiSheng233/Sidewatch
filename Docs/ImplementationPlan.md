@@ -27,7 +27,7 @@ Use a sidebar, content list, and detail inspector. Support light/dark appearance
 | Leftover Services | Services still alive after their agent exits, reminders, and individual cleanup; distinguish shared or uncertain attribution |
 | Protection Rules | Create, edit, enable, disable, and delete rules; choose file/directory, operations, and agent scope; show actual mode, enforcement state, simulated matches, and blocking records |
 
-Global search supports port numbers, commands, project paths, and file paths. The inspector shows the agent → shell/tool → service launch chain and related file activity. Empty data, missing permissions, disconnected extensions, and query failures have truthful states and actionable controls.
+Global search supports port numbers, commands, project paths, and file paths. The inspector shows the agent → shell/tool → service launch chain and related file activity. Empty data, missing permissions, disconnected extensions, and query failures have accurate states and controls the user can act on.
 
 Put all user-visible strings, including menus, buttons, empty states, errors, notifications, and accessibility labels, in `Localizable.xcstrings`, accessed through Foundation localization APIs. Use plural rules for counts and locale-aware formatters for dates and durations. Avoid concatenating English sentences. Persistence, XPC, and event types use stable, nonlocalized identifiers that are translated only for display. Ship English resources first; adding translations must not require changing business models.
 
@@ -82,13 +82,15 @@ These paths define the implementation targets. New source files did not exist at
 - [x] Integrate GRDB following the [database design](DatabaseDesign.md); implement attribution, agent/project recognition, and transactional persistence; verify identities, migrations, pagination, and live-service lineage after retention.
 - [x] Implement the system extension, ES subscriptions/authorization callbacks, rule snapshots, user isolation, and XPC; configure modes, acknowledged transitions, installation, and embedding. Backend source is complete; full tests, product builds, and authorized runtime checks are deferred as recorded in BackendHandover.md.
 - [x] Implement native process/socket inspection, runtimes, and audit-token signals; preserve query and permission errors.
-- [ ] Switch the host to AppKit and connect ViewModels; implement five English pages, search/filtering, inspector, rules, modes, and permissions; localize every display string through the String Catalog.
-- [ ] Connect leftover reminders, surviving descendants without ports, individual cleanup, and file history; identify shared and uncertain attribution.
+- [x] Switch the host to AppKit and connect ViewModels; implement five English pages, search/filtering, inspector, rules, modes, and permissions; localize every display string through the String Catalog. Verified offline and with real native process/port data; pages that need monitor history await authorized runtime verification.
+- [x] Connect leftover reminders, surviving descendants without ports, individual cleanup, and file history; identify shared and uncertain attribution. Projection logic is regression-tested; live leftover detection and cleanup require the installed extension.
 - [ ] Run acceptance checks below, complete runtime/change documentation, and submit the actual code diff for Plannotator review.
 
 ## Current execution checkpoint
 
-The current backend source checkpoint is complete, including the requested independent slow ES review and corrections. Native process/socket and audit-token signal scenarios were exercised. The user's latest instruction explicitly defers backend test execution and host/extension builds to the [handover](BackendHandover.md); no final integrated test/build or live ES interception pass is claimed. Stop before step 5. The existing [API reference](UIBuilderInterfaces.md) documents interfaces only. Commit the delivered source by module. The remaining UI, integration, and final acceptance scope stays pending, and this checkpoint does not complete the overall goal.
+Steps 1–6 are implemented. The deferred backend suite and the host/extension build now run: `SidewatchTests` passes 121/121 (98 backend, 23 host projection/Git diff), and the unsigned Sidewatch scheme builds with the extension embedded. See [BackendHandover.md](BackendHandover.md) for fixes found by that run.
+
+The AppKit host runs against real native process/port data. Its pages were captured in light, dark, and doubled-string pseudolocalization using the DEBUG snapshot hook described in the README. Timeline, leftover, rule-editing, and Stop/Force Quit paths are implemented against the XPC API but have not run against an installed, entitled extension. Step 7 (independent review, Plannotator submission, authorized runtime acceptance) remains open, so the overall goal is not complete.
 
 ## Attribution invariants
 

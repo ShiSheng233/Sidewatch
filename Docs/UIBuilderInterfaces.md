@@ -10,6 +10,7 @@ This document describes the existing host-module API. Swift types are internal t
 | Typed monitor/XPC client | [MonitorConnection.swift](../Sidewatch/Services/MonitorConnection.swift) | `@MainActor` |
 | Native process/socket capture | [ProcessSnapshotService.swift](../Sidewatch/Services/ProcessSnapshotService.swift) | Actor |
 | Manual process control | [ProcessControlService.swift](../Sidewatch/Services/ProcessControlService.swift) | `@MainActor`; signal work runs off the main actor |
+| Read-only Git diff | [GitDiffService.swift](../Sidewatch/Services/GitDiffService.swift) | `Sendable`; work runs on a detached task |
 | Shared DTOs and constants | [ActivityModels.swift](../Shared/Models/ActivityModels.swift) | `Codable`, `Sendable` values |
 | Raw XPC protocols | [MonitorProtocol.swift](../Shared/MonitorProtocol.swift) | Foundation XPC callbacks |
 
@@ -155,7 +156,7 @@ struct MonitorConfiguration {
 }
 ```
 
-This submits a complete configuration, not a patch. The requested revision must be exactly the current persisted revision plus one. Revisions are immutable; a conflict requires reading the current configuration. The server prepares canonical rule paths and file identities and returns the prepared, acknowledged configuration.
+This submits a complete configuration, not a patch. Failure codes include `configuration_conflict` (stale revision), `monitor_inactive`, `configuration_not_applied`, `invalid_configuration`, `rule_path_unavailable`, and `rule_target_mismatch`. The requested revision must be exactly the current persisted revision plus one. Revisions are immutable; a conflict requires reading the current configuration. The server prepares canonical rule paths and file identities and returns the prepared, acknowledged configuration.
 
 A persisted configuration is selected intent. Only `health.activeMode` and `health.activeRevision` describe acknowledged runtime activation. A failed/disconnected request is not a successful activation, even if the selected configuration has already been persisted. A later snapshot resolves that distinction.
 
@@ -182,9 +183,9 @@ struct ProtectionRule {
 
 An empty `agentIDs` set means all recognized Agents; unattributed processes do not match it. Paths are absolute filesystem paths, not glob expressions. A directory rule uses directory boundaries. Rename matching considers the source and destination. `fileIdentity` is server-prepared metadata, not an authorization token.
 
-`AgentDefinition` contains `id`, `name`, exact executable names, and supported script-path components. Current defaults are Codex, Claude Code, Gemini CLI, and OpenCode. Recognition does not search arbitrary command substrings.
+`AgentDefinition` contains `id`, `name`, exact executable names, supported script-path components, and optional `installDirectoryComponents`: trailing directory names that identify a versioned install, where the binary is named by version (Claude Code's native installer uses `claude/versions/<version>`). Current defaults are Codex, Claude Code, Gemini CLI, OpenCode, and omp. Recognition does not search arbitrary command substrings and never uses `argv[0]`.
 
-Accepted configuration bounds: positive revision, retention of `1...3650` days, storage budget of at least `1 MiB`, at most `512` rules and `64` Agent definitions. IDs are unique within each collection. Rule IDs/names are nonempty, paths contain no NUL and are at most `4096` UTF-8 bytes, and operation sets are nonempty. Agent IDs/names are nonempty; each definition supplies executable names or script components. Executable names are nonempty basenames without `/` or NUL; script components contain no NUL.
+Accepted configuration bounds: positive revision, retention of `1...3650` days, storage budget of at least `1 MiB`, at most `512` rules and `64` Agent definitions. IDs are unique within each collection. Rule IDs/names are nonempty, paths contain no NUL and are at most `4096` UTF-8 bytes, and operation sets are nonempty. Agent IDs/names are nonempty; each definition supplies executable names, script components, or install-directory components. Install-directory components are at most 8 single names without `/`, NUL, `.`, or `..`. Executable names are nonempty basenames without `/` or NUL; script components contain no NUL.
 
 ### clearHistory()
 
@@ -350,4 +351,15 @@ The raw `MonitorRemote` methods are handshake, snapshot, activities, configure, 
 
 `MonitorClient.databaseDidCommit(_:watermark:)` and `monitorHealthChanged(_:)` are adapted to the typed main-actor callbacks above. Database objects, SQL, and caller-selected user scopes are not part of the transport.
 
-There is no existing Git-diff, file-restore, chat-title/task-content, bulk-cleanup, or leftover-notification API in this surface. The current APIs provide real history/graph values, current native observations, per-execution control, configuration, and health.
+## GitDiffService
+
+```swift
+struct GitDiffService: Sendable {
+    func diff(forFile path: String) async -> GitDiffResult
+}
+// GitDiffResult: diff(repository:text:truncated:), noChanges, noBaseline, notInRepository, gitUnavailable, failed(status:)
+```
+
+Compares one file's working copy with `HEAD` using `/usr/bin/git` with read-only options: no optional locks, no external diff or text conversion, literal pathspecs, a 10 s timeout, and a 1 MB output cap. A file absent from `HEAD`, or a repository without commits, has no baseline. A diff may include edits by other actors and never attributes lines to an agent. Restoration is not offered.
+
+There is no file-restore, chat-title/task-content, or bulk-cleanup API in this surface. Leftover reminders are derived in the host from `MonitorSnapshot` (see `ActivityProjection`). The current APIs provide real history/graph values, current native observations, per-execution control, configuration, and health.
