@@ -164,7 +164,9 @@ enum RowMapping {
     }
 
     /// Restores an execution record for display only. Tokens are never part of
-    /// the persisted graph, and the live state of a restored record is unknown.
+    /// the persisted graph, and the live state of a restored record is unknown. A
+    /// recorded exit is not live state: it stays exited so completed history cannot
+    /// reappear as a possibly live execution after a reopen.
     static func execution(from row: Row) throws -> ExecutionRecord {
         let executionIdentity = ExecutionIdentity(
             process: ProcessIdentity(
@@ -176,6 +178,7 @@ enum RowMapping {
         let argumentsJSON: String = try required(row, "arguments_json")
         let arguments = try ConfigurationJSON.decodeArguments(argumentsJSON)
         let evidence: EvidenceKind = try enumValue(row, "evidence", as: EvidenceKind.self)
+        let persistedState: ExecutionState = try enumValue(row, "state", as: ExecutionState.self)
 
         let parentBoot: String? = try optional(row, "parent_boot_identifier")
         let parentPid: Int64? = try optional(row, "parent_identity_pid")
@@ -216,7 +219,7 @@ enum RowMapping {
             teamID: teamID,
             startedAt: MicroTime.date(startedAtMicros),
             endedAt: endedAtMicros.map(MicroTime.date),
-            state: .unknown,
+            state: persistedState == .exited ? .exited : .unknown,
             evidence: evidence,
             auditToken: nil)
     }

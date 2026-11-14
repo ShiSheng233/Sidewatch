@@ -32,7 +32,7 @@ enum HistoryQueries {
         let rows = try Row.fetchAll(db, sql: """
             SELECT e.pidversion, e.parent_pid, e.user_id, e.executable, e.arguments_json,
                    e.working_directory, e.signing_id, e.team_id, e.started_at_us, e.ended_at_us,
-                   e.evidence,
+                   e.state, e.evidence,
                    e.parent_boot_identifier, e.parent_identity_pid,
                    e.parent_identity_start_us, e.parent_identity_pidversion,
                    e.responsible_boot_identifier, e.responsible_identity_pid,
