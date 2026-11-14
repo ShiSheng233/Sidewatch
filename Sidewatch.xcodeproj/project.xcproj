@@ -98,6 +98,7 @@
           "$(inherited)",
           "@executable_path/../Frameworks",
         ],
+        "MACOSX_DEPLOYMENT_TARGET": "26",
         "MARKETING_VERSION": "1.0",
         "OTHER_LDFLAGS": [
           "$(inherited)",
