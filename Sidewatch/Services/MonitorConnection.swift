@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 /// Authenticated XPC client for the privileged Endpoint Security extension.
 ///

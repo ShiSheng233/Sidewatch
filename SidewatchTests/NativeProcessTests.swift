@@ -16,7 +16,7 @@ final class NativeProcessTests: XCTestCase {
         XCTAssertEqual(inet_pton(AF_INET6, "fe80::1", &address.sin6_addr), 1)
         let result = withUnsafePointer(to: &address) {
             $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
-                bind(descriptor, $0, socklen_t(MemoryLayout<sockaddr_in6>.size))
+                Darwin.bind(descriptor, $0, socklen_t(MemoryLayout<sockaddr_in6>.size))
             }
         }
         if result != 0 {

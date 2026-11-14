@@ -135,8 +135,7 @@
         "OTHER_LDFLAGS": [
           "$(inherited)",
           "-lbsm",
-          "-framework",
-          "EndpointSecurity",
+          "-lEndpointSecurity",
         ],
         "PRODUCT_BUNDLE_IDENTIFIER": "dev.shisheng.Sidewatch.Tests",
         "PRODUCT_NAME": "$(TARGET_NAME)",
@@ -177,8 +176,7 @@
         "OTHER_LDFLAGS": [
           "$(inherited)",
           "-lbsm",
-          "-framework",
-          "EndpointSecurity",
+          "-lEndpointSecurity",
         ],
         "PRODUCT_BUNDLE_IDENTIFIER": "dev.shisheng.Sidewatch.Monitor",
         "PRODUCT_MODULE_NAME": "SidewatchMonitor",

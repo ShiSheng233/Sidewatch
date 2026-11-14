@@ -262,7 +262,9 @@ final class IngestionRetentionTests: XCTestCase {
                 await order.append("first-end")
             }
         }
-        await firstStarted.value
+        // Reading the flag does not wait for it; the second mutation must only be
+        // started once the first one actually holds the pause.
+        while !(await firstStarted.value) { await Task.yield() }
 
         let secondEntered = Flag()
         let second = Task {
@@ -503,11 +505,11 @@ private actor BlockingStoreProvider {
 }
 
 private actor FailingStoreProvider {
-    private let store: ActivityStore
+    private let wrapped: ActivityStore
     private var failed = false
 
     init(store: ActivityStore) {
-        self.store = store
+        self.wrapped = store
     }
 
     func store() throws -> ActivityStore {
@@ -515,6 +517,6 @@ private actor FailingStoreProvider {
             failed = true
             throw POSIXError(.EIO)
         }
-        return store
+        return wrapped
     }
 }

@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import OSLog
 import SystemExtensions
 
 /// Host-side lifecycle for the Endpoint Security system extension.

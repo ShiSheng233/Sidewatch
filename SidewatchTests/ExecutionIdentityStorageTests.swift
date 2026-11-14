@@ -28,10 +28,10 @@ final class ExecutionIdentityStorageTests: XCTestCase {
 
         let baseline = now.addingTimeInterval(-600)
         let execStart = now
-        try await store.ingest(makeBatch(executions: [
+        _ = try await store.ingest(makeBatch(executions: [
             makeExecution(version: 1, startedAt: baseline, evidence: .snapshot)
         ]))
-        try await store.ingest(makeBatch(executions: [
+        _ = try await store.ingest(makeBatch(executions: [
             makeExecution(version: 1, startedAt: execStart, evidence: .observed)
         ]))
 
@@ -41,7 +41,7 @@ final class ExecutionIdentityStorageTests: XCTestCase {
         XCTAssertEqual(records.first?.startedAt, execStart)
 
         // A later metadata refresh still carries the process creation baseline.
-        try await store.ingest(makeBatch(executions: [
+        _ = try await store.ingest(makeBatch(executions: [
             makeExecution(version: 1, startedAt: baseline, evidence: .snapshot)
         ]))
         records = try await store.graph().executions
@@ -61,14 +61,14 @@ final class ExecutionIdentityStorageTests: XCTestCase {
         let observed = makeExecution(version: 3, startedAt: execStart, evidence: .observed)
 
         // Both rows are in the batch, so the engine still keeps the snapshot identity.
-        try await store.ingest(makeBatch(executions: [placeholder, observed]))
+        _ = try await store.ingest(makeBatch(executions: [placeholder, observed]))
         var dates = Dictionary(
             try await store.graph().executions.map { ($0.identity, $0.startedAt) },
             uniquingKeysWith: { first, _ in first })
         XCTAssertEqual(dates[placeholder.identity], baseline)
         XCTAssertEqual(dates[observed.identity], execStart)
 
-        try await store.ingest(makeBatch(executions: [
+        _ = try await store.ingest(makeBatch(executions: [
             makeExecution(version: 3, startedAt: baseline, evidence: .snapshot)
         ]))
         dates = Dictionary(
@@ -121,7 +121,9 @@ final class ExecutionIdentityStorageTests: XCTestCase {
             [placeholder.identity, observed.identity])
         XCTAssertEqual(graph.sessions.map(\.id), [sessionID])
         XCTAssertEqual(graph.sessions.map(\.root), [placeholder.identity])
-        XCTAssertTrue(graph.executions.allSatisfy { $0.state == .running })
+        // Neither execution is retired by the promotion. Persisted live state reads back
+        // as unknown (UIBuilderInterfaces: ExecutionState), never as a recorded exit.
+        XCTAssertTrue(graph.executions.allSatisfy { $0.state == .unknown })
         var page = try await page(store)
         XCTAssertEqual(page.activities.map(\.execution), [observed.identity, placeholder.identity])
 
@@ -151,7 +153,7 @@ final class ExecutionIdentityStorageTests: XCTestCase {
         XCTAssertEqual(graph.sessions.map(\.id), [sessionID])
         XCTAssertEqual(graph.sessions.map(\.root), [placeholder.identity])
         XCTAssertEqual(graph.sessions.first?.endedAt, endedAt)
-        page = try await page(reopened)
+        page = try await self.page(reopened)
         XCTAssertEqual(page.activities.count, 2)
     }
 
