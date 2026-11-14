@@ -1,0 +1,94 @@
+{
+  "fill-specializations": [
+    {
+      "value": {
+        "linear-gradient": [
+          "display-p3:0.86000,0.58000,1.00000,1.00000",
+          "display-p3:0.55000,0.22000,0.84000,1.00000"
+        ]
+      }
+    },
+    {
+      "appearance": "dark",
+      "value": {
+        "linear-gradient": [
+          "display-p3:0.36120,0.24360,0.42000,1.00000",
+          "display-p3:0.12100,0.04840,0.18480,1.00000"
+        ]
+      }
+    }
+  ],
+  "groups": [
+    {
+      "name": "Glyph",
+      "layers": [
+        {
+          "image-name": "Service.svg",
+          "name": "Service",
+          "fill": {
+            "linear-gradient": [
+              "display-p3:1.00000,0.78000,0.26000,1.00000",
+              "display-p3:1.00000,0.55000,0.12000,1.00000"
+            ]
+          }
+        },
+        {
+          "image-name": "Prompt.svg",
+          "name": "Prompt",
+          "fill": {
+            "linear-gradient": [
+              "display-p3:1.00000,0.46000,0.72000,1.00000",
+              "display-p3:0.95000,0.24000,0.56000,1.00000"
+            ]
+          }
+        },
+        {
+          "image-name": "Trail.svg",
+          "name": "Trail",
+          "fill": {
+            "linear-gradient": [
+              "display-p3:0.66000,0.34000,0.96000,1.00000",
+              "display-p3:0.46000,0.14000,0.80000,1.00000"
+            ]
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "layer-color",
+        "opacity": 0.45
+      },
+      "specular": true,
+      "translucency": {
+        "enabled": false,
+        "value": 0.5
+      }
+    },
+    {
+      "name": "Card",
+      "layers": [
+        {
+          "image-name": "Card.svg",
+          "name": "Card",
+          "fill": {
+            "linear-gradient": [
+              "display-p3:1.00000,1.00000,1.00000,1.00000",
+              "display-p3:1.00000,0.95000,0.93000,1.00000"
+            ]
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.5
+      },
+      "specular": true,
+      "translucency": {
+        "enabled": true,
+        "value": 0.15
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": "shared"
+  }
+}
