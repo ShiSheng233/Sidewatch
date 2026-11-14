@@ -1093,3 +1093,43 @@ int32_t sw_probe_self_token(uint8_t *token, size_t token_length)
     memcpy(token, &audit_token, sizeof(audit_token));
     return 0;
 }
+
+int32_t sw_probe_session_writers(SWSessionWriterCallback writer, void *context)
+{
+    if (writer == NULL) return EINVAL;
+    pid_t *pids = NULL;
+    size_t pid_capacity = 0, pid_count = 0;
+    struct proc_fdinfo *fds = NULL;
+    size_t fd_capacity = 0;
+    int32_t result = sw_collect_pids(&pids, &pid_capacity, &pid_count);
+    if (result != 0) { free(pids); return result; }
+
+    for (size_t index = 0; index < pid_count; ++index) {
+        SWProcessIdentity before;
+        if (sw_probe_identity(pids[index], &before) != 0 || before.user_id != getuid()) continue;
+        size_t fd_bytes = 0;
+        if (sw_read_fd_list(before.pid, &fds, &fd_capacity, &fd_bytes) != 0) continue;
+        size_t fd_count = fd_bytes / sizeof(*fds);
+        for (size_t fd_index = 0; fd_index < fd_count; ++fd_index) {
+            if (fds[fd_index].proc_fdtype != PROX_FDTYPE_VNODE) continue;
+            struct vnode_fdinfowithpath info;
+            memset(&info, 0, sizeof(info));
+            int bytes = proc_pidfdinfo(before.pid, fds[fd_index].proc_fd,
+                                      PROC_PIDFDVNODEPATHINFO, &info, (int)sizeof(info));
+            if (bytes != (int)sizeof(info)) continue;
+            /* proc_fileinfo exports kernel FWRITE (0x2), not user O_WRONLY. */
+            if ((info.pfi.fi_openflags & 0x2u) == 0) continue;
+            size_t length = strnlen(info.pvip.vip_path, sizeof(info.pvip.vip_path));
+            if (length < 6 || length == sizeof(info.pvip.vip_path) ||
+                memcmp(info.pvip.vip_path + length - 6, ".jsonl", 6) != 0) continue;
+            SWProcessIdentity after;
+            if (sw_probe_identity(before.pid, &after) != 0 ||
+                after.start_time_micros != before.start_time_micros ||
+                after.user_id != before.user_id) continue;
+            writer(&before, info.pvip.vip_path, context);
+        }
+    }
+    free(fds);
+    free(pids);
+    return 0;
+}

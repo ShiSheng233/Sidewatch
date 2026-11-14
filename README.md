@@ -40,7 +40,7 @@ Operational diagnostics use macOS Unified Logging with subsystem `dev.shisheng.S
 
 ## Interface
 
-Pure AppKit with MVVM (`Sidewatch/ViewModels`, `Sidewatch/Views`); no SwiftUI. The window has a sidebar (Agents, Timeline, Ports & Services, Leftover Services, Protection Rules), a content list, and an inspector showing the launch chain, process details, related file activity, and a Git diff for the selected file. Search accepts port numbers, commands, project paths, and file paths. The toolbar shows only the mode the extension has acknowledged.
+Pure AppKit with MVVM (`Sidewatch/ViewModels`, `Sidewatch/Views`); no SwiftUI. The window has a sidebar (Agents, Timeline, Ports & Services, Leftover Services, Agent Disk, Protection Rules), a content list, and an inspector showing the launch chain, process details, related file activity, and a Git diff for the selected file. Search accepts port numbers, commands, project paths, and file paths. The toolbar shows only the mode the extension has acknowledged.
 
 Without the extension, the app shows current processes and ports readable by your account, recognizes running agent CLIs from the process list (labeled Snapshot), and states that history and protection are inactive. Stop and Force Quit require the extension's live identity for the exact process. Leftover reminders use the Dock badge and, if permitted, a notification.
 
@@ -53,6 +53,20 @@ SIDEWATCH_UI_SNAPSHOT_DIR=/tmp/sidewatch-ui \
   /tmp/SidewatchDerivedData/Build/Products/Debug/Sidewatch.app/Contents/MacOS/Sidewatch
 # Add -NSDoubleLocalizedStrings YES to check text expansion.
 ```
+
+## Agent disk audit
+
+**Agent Disk** reads Codex, Claude Code, omp, and pi session JSONL. Discovery includes native account homes, Codex archives, omp profiles, and the providers' configured session directories (`CODEX_HOME`, `CLAUDE_CONFIG_DIR`, `XDG_DATA_HOME`, `PI_CODING_AGENT_DIR`, and `PI_CODING_AGENT_SESSION_DIR`). Pi's JSONC `sessionDir` and subagent `defaultSessionDir` settings are also honored. It correlates file-producing tool calls with successful results, measures surviving artifacts, and lists them in a tree under the session that wrote them, with each file's source log, tool, disk usage, and cleanup eligibility. This works without the system extension. Log text is never executed.
+
+Candidates include paths touched by successful `Edit`/`edit`, writes, patches, and supported shell output operations in `/tmp`, `/var/tmp`, or the user's temporary directory (normally under `/var/folders`). Editing a file makes it visible in the audit; deletion additionally requires evidence that the agent created it. A file first created and later edited can retain its creation evidence. Ordinary reads and path mentions do not establish ownership.
+
+Supported shell outputs include literal `>`/`>>` redirections, heredoc header redirections, `cp`/`mv`/`tee`, compiler `-o`, and Xcode build output directories. Random `mktemp` paths are resolved from a successful paired output matching the invocation's template. Shell code, heredoc bodies, variable substitutions, and embedded programs are never executed to reconstruct their effects; unsupported dynamic paths are reported as incomplete coverage. Patches include added and updated files, and omp hashline edit headers are recognized.
+
+Scanning is read-only. **Clean Eligible** asks for confirmation with the count and size of the eligible files currently listed (search included), then rescans and deletes only those paths, and only if they haven't changed. A confirmation made while another scan is running waits for that scan instead of being dropped. Automatic cleanup is off by default; enable it on the audit page and choose a session inactivity timeout (72 hours initially). It checks once a minute while Sidewatch is running. These JSONL formats do not record session exit: Sidewatch can confirm an exit only for a process it previously observed writing that session log, using both PID and process start time. A still-live observed writer renews the lease; old or unobserved sessions use inactivity expiry. Completing a turn does not end a session. A shared artifact waits for every claiming session.
+
+Automatic eligibility is restricted to current-user temporary files with corroborating creation times, no later changes, and a quiet period. Project files, symlinks, hardlinks, and directories remain for review. Directory sizes are measured without following symlinks. Missing files disappear from the audit; unreadable or malformed evidence is reported. Compressed Codex logs are reported as unsupported. Files created outside a session log are not discovered by this scan. The format handling follows the provider parsers and trace pairing in [magpie](https://github.com/yetone/magpie/tree/main/internal/sessions).
+
+Cleanup permanently unlinks eligible files. Session logs and project files are retained. Changing the idle timeout cancels a running automatic cleanup and rescans under the new timeout. Closing Sidewatch stops scheduled cleanup; reopening it resumes the saved policy. Erase All Data resets the policy to automatic cleanup off.
 
 ## Design and verification
 

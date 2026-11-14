@@ -10,6 +10,7 @@ enum DisplayText {
         case .timeline: String(localized: "Timeline", comment: "Sidebar page")
         case .ports: String(localized: "Ports & Services", comment: "Sidebar page")
         case .leftovers: String(localized: "Leftover Services", comment: "Sidebar page")
+        case .diskAudit: String(localized: "Agent Disk", comment: "Sidebar page")
         case .rules: String(localized: "Protection Rules", comment: "Sidebar page")
         }
     }
@@ -20,7 +21,55 @@ enum DisplayText {
         case .timeline: "clock"
         case .ports: "network"
         case .leftovers: "exclamationmark.triangle"
+        case .diskAudit: "internaldrive"
         case .rules: "lock.shield"
+        }
+    }
+
+    static func agentDiskState(_ state: AgentDiskItemState) -> String {
+        switch state {
+        case .waiting: String(localized: "Waiting", comment: "Disk audit item state")
+        case .eligible: String(localized: "Eligible", comment: "Disk audit item state")
+        case .review: String(localized: "Review", comment: "Disk audit item state")
+        case .removed: String(localized: "Deleted", comment: "Disk audit item state")
+        case .failed: String(localized: "Failed", comment: "Disk audit item state")
+        }
+    }
+
+    /// Stable reason codes from the audit engine. Unknown codes stay reviewable rather than
+    /// implying that automatic deletion is safe.
+    static func agentDiskReason(_ code: String) -> String {
+        switch code {
+        case "waiting.session-active": String(localized: "Session hasn't ended or reached the idle timeout", comment: "Disk audit reason")
+        case "waiting.quiet-period": String(localized: "Session ended or timed out; waiting a few minutes", comment: "Disk audit reason")
+        case "eligible.session-ended": String(localized: "Agent process exited", comment: "Disk audit reason")
+        case "eligible.idle-expired": String(localized: "Session reached the idle timeout", comment: "Disk audit reason")
+        case "eligible.mixed": String(localized: "Every claiming session exited or reached the idle timeout", comment: "Disk audit reason")
+        case "review.project-cwd": String(localized: "Inside a project folder", comment: "Disk audit reason")
+        case "review.project-unknown": String(localized: "Session's project folder is unknown", comment: "Disk audit reason")
+        case "review.log-incomplete": String(localized: "Session log may be incomplete", comment: "Disk audit reason")
+        case "review.session-log": String(localized: "Inside an agent session log folder", comment: "Disk audit reason")
+        case "review.symlink": String(localized: "Path contains a symbolic link", comment: "Disk audit reason")
+        case "review.hardlink": String(localized: "File has multiple hard links", comment: "Disk audit reason")
+        case "review.owner": String(localized: "Owned by another user", comment: "Disk audit reason")
+        case "review.unsupported-type": String(localized: "Unsupported file type", comment: "Disk audit reason")
+        case "review.directory": String(localized: "Sidewatch doesn't delete folders", comment: "Disk audit reason")
+        case "review.preexisting": String(localized: "Timestamps don't match the agent's recorded writes", comment: "Disk audit reason")
+        case "review.modified-only": String(localized: "The agent edited this file but may not have created it", comment: "Disk audit reason")
+        case "failed.target-changed": String(localized: "File changed during cleanup", comment: "Disk audit reason")
+        case "failed.delete": String(localized: "File couldn't be deleted", comment: "Disk audit reason")
+        case "removed": String(localized: "Deleted", comment: "Disk audit reason")
+        default: String(localized: "Review required", comment: "Disk audit reason fallback")
+        }
+    }
+
+    static func idleTimeout(hours: Int) -> String {
+        switch hours {
+        case 1: String(localized: "1 hour", comment: "Disk audit idle timeout")
+        case 24: String(localized: "24 hours", comment: "Disk audit idle timeout")
+        case 72: String(localized: "3 days", comment: "Disk audit idle timeout")
+        case 168: String(localized: "7 days", comment: "Disk audit idle timeout")
+        default: String(localized: "\(hours) hours", comment: "Disk audit idle timeout")
         }
     }
 

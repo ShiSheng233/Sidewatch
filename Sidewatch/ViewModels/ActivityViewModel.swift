@@ -2,7 +2,7 @@ import Foundation
 import Darwin
 
 enum SidewatchPage: String, CaseIterable, Sendable {
-    case agents, timeline, ports, leftovers, rules
+    case agents, timeline, ports, leftovers, diskAudit, rules
 }
 
 /// Connection to the monitor service as observed by the host.

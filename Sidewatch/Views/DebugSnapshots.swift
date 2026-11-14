@@ -19,9 +19,21 @@ enum DebugSnapshots {
                 NSApp.appearance = NSAppearance(named: appearance)
                 for page in SidewatchPage.allCases {
                     viewModel.setPage(page)
+                    if page == .diskAudit {
+                        await (window.windowController as? MainWindowController)?.awaitDiskAuditScan()
+                    }
                     try? await Task.sleep(for: .milliseconds(900))
                     let name = "\(page.rawValue)-\(appearance == .aqua ? "light" : "dark").png"
                     write(window, to: directory.appendingPathComponent(name))
+                    if page == .diskAudit,
+                       let popover = (window.windowController as? MainWindowController)?.showDiskAuditIssues() {
+                        try? await Task.sleep(for: .milliseconds(600))
+                        if let popoverWindow = popover.contentViewController?.view.window {
+                            write(popoverWindow, to: directory.appendingPathComponent(
+                                "diskAudit-issues-\(appearance == .aqua ? "light" : "dark").png"))
+                        }
+                        popover.close()
+                    }
                 }
                 for pane in SettingsPane.allCases {
                     AppDelegate.shared?.showSettings(pane)

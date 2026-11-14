@@ -174,6 +174,9 @@
         }
       }
     },
+    "%lld days" : {
+
+    },
     "%lld endpoints" : {
       "localizations" : {
         "en" : {
@@ -269,6 +272,9 @@
           }
         }
       }
+    },
+    "%lld events were dropped." : {
+
     },
     "%lld events were dropped. History is incomplete for those periods." : {
       "localizations" : {
@@ -408,7 +414,13 @@
     "Active mode: %@. Collecting activity." : {
 
     },
+    "Activity collection" : {
+
+    },
     "Activity from the Same Process" : {
+
+    },
+    "Activity history and protection stop until you install it again. macOS asks for an administrator's approval to remove the extension." : {
 
     },
     "Activity history requires the monitor extension." : {
@@ -510,11 +522,23 @@
     "All recognized agents" : {
 
     },
+    "All recorded activity, agent sessions, port history, and stop records are permanently removed. Your protection rules are deleted, the mode returns to Record Only, and retention and app preferences are reset. Processes running now stay tracked so attribution keeps working. This can't be undone." : {
+
+    },
     "All Services" : {
 
     },
     "Allowed" : {
       "comment" : "Actual system response"
+    },
+    "Also erase all recorded data and settings" : {
+
+    },
+    "Also erase data (requires a monitor connection)" : {
+
+    },
+    "Another monitor request is in progress." : {
+
     },
     "Applies to:" : {
 
@@ -523,6 +547,12 @@
 
     },
     "Approve the Sidewatch monitor extension in System Settings. History and protection are inactive until it's approved." : {
+
+    },
+    "Approve…" : {
+
+    },
+    "Asking macOS and the monitor for their current state." : {
 
     },
     "Attribution" : {
@@ -535,6 +565,9 @@
 
     },
     "Authorization response failed" : {
+
+    },
+    "Available once the extension is enabled." : {
 
     },
     "Blocked" : {
@@ -553,6 +586,9 @@
 
     },
     "Cancel" : {
+
+    },
+    "Change how Sidewatch alerts appear in macOS." : {
 
     },
     "Change pending · %lld of %lld rules on" : {
@@ -593,6 +629,24 @@
     "Chat titles and task contents aren't available from system events." : {
 
     },
+    "Check Again" : {
+
+    },
+    "Checked %@" : {
+
+    },
+    "Checked by the monitor once it's connected." : {
+
+    },
+    "Checked just now" : {
+
+    },
+    "Checking" : {
+
+    },
+    "Checking…" : {
+
+    },
     "Choose" : {
 
     },
@@ -605,13 +659,22 @@
     "Choose a folder to protect." : {
 
     },
+    "Choose Record Only, Dry Run, or Protect, and manage protected files and folders." : {
+
+    },
     "Choose…" : {
+
+    },
+    "Clean Up" : {
 
     },
     "Clear Activity History?" : {
 
     },
     "Clear Filters" : {
+
+    },
+    "Clear history" : {
 
     },
     "Clear History" : {
@@ -624,6 +687,12 @@
 
     },
     "Close Window" : {
+
+    },
+    "Collecting activity for your account in %@ mode." : {
+
+    },
+    "Collecting in %@ mode." : {
 
     },
     "Collection Gap" : {
@@ -639,6 +708,9 @@
 
     },
     "Connect to the monitor service to change protection settings." : {
+
+    },
+    "Connected." : {
 
     },
     "Connecting…" : {
@@ -662,6 +734,9 @@
     "Couldn't Clear History" : {
 
     },
+    "Couldn't Erase Data" : {
+
+    },
     "Couldn't Force Quit “%@”" : {
 
     },
@@ -677,6 +752,9 @@
     "Couldn't Stop “%@”" : {
 
     },
+    "Couldn't Uninstall the Monitor" : {
+
+    },
     "Create" : {
       "comment" : "Activity kind"
     },
@@ -690,6 +768,9 @@
 
     },
     "Cut" : {
+
+    },
+    "Data" : {
 
     },
     "Delete" : {
@@ -714,6 +795,12 @@
 
     },
     "Disabled" : {
+
+    },
+    "Disconnected. History shown may be out of date." : {
+
+    },
+    "Dock badge" : {
 
     },
     "Dry Run" : {
@@ -750,6 +837,18 @@
 
     },
     "Enter Full Screen" : {
+
+    },
+    "Erase all data" : {
+
+    },
+    "Erase All Data" : {
+
+    },
+    "Erase All Data…" : {
+
+    },
+    "Erase All Sidewatch Data?" : {
 
     },
     "Evaluates enabled rules and records Would Block, but allows every operation." : {
@@ -836,6 +935,12 @@
     "From" : {
 
     },
+    "Full Disk Access" : {
+
+    },
+    "General" : {
+
+    },
     "Git couldn't produce a diff (status %lld)." : {
 
     },
@@ -846,6 +951,9 @@
 
     },
     "Grant Full Disk Access to the Sidewatch monitor so it can collect activity." : {
+
+    },
+    "Granted." : {
 
     },
     "Help" : {
@@ -863,7 +971,13 @@
     "History is stored by the monitor extension and isn't available while it's disconnected." : {
 
     },
+    "History is stored by the monitor. Connect it to see and change these settings." : {
+
+    },
     "History off" : {
+
+    },
+    "History Storage" : {
 
     },
     "History storage is unavailable. New activity may not be saved." : {
@@ -878,6 +992,19 @@
     "Inactive while the monitor is off" : {
 
     },
+    "Inactive." : {
+
+    },
+    "Included version %@ (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Included version %1$@ (%2$@)"
+          }
+        }
+      }
+    },
     "Inferred" : {
       "comment" : "Attribution evidence"
     },
@@ -887,14 +1014,33 @@
     "Inspector" : {
 
     },
-    "Install Monitor Extension…" : {
+    "Install" : {
 
     },
     "Install…" : {
 
     },
+    "Installed and enabled." : {
+
+    },
+    "Installed and enabled. This app includes a different version (%@, build %@)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Installed and enabled. This app includes a different version (%1$@, build %2$@)."
+          }
+        }
+      }
+    },
+    "Installing…" : {
+
+    },
     "Java" : {
       "comment" : "Runtime"
+    },
+    "Keep activity for" : {
+
     },
     "Kind" : {
 
@@ -902,10 +1048,19 @@
     "Launch Chain" : {
 
     },
+    "Leftover count on the Dock icon" : {
+
+    },
+    "Leftover service notifications" : {
+
+    },
     "Leftover Services" : {
       "comment" : "Sidebar page"
     },
     "Leftover services are identified from recorded agent exits, which requires the monitor extension." : {
+
+    },
+    "Leftovers are identified from recorded agent exits, so reminders need the monitor." : {
 
     },
     "Listening" : {
@@ -918,6 +1073,12 @@
 
     },
     "Loading…" : {
+
+    },
+    "Location" : {
+
+    },
+    "Manage Monitor…" : {
 
     },
     "Match history requires the monitor connection." : {
@@ -944,10 +1105,19 @@
     "Mode Pending" : {
 
     },
+    "Monitor" : {
+
+    },
+    "Monitor Active" : {
+
+    },
     "Monitor extension not installed" : {
 
     },
     "Monitor extension unavailable" : {
+
+    },
+    "Monitor Not Installed" : {
 
     },
     "Monitor observation" : {
@@ -956,7 +1126,16 @@
     "Monitor Off" : {
 
     },
+    "Monitor service" : {
+
+    },
+    "Monitor Unavailable" : {
+
+    },
     "Monitoring unavailable" : {
+
+    },
+    "Monitoring Unavailable" : {
 
     },
     "More than one agent is related to this process. Sidewatch shows known relationships but can't detect every consumer of a service." : {
@@ -974,6 +1153,12 @@
     "Needs Approval" : {
 
     },
+    "Needs attention" : {
+
+    },
+    "Needs Attention" : {
+
+    },
     "Needs monitor history" : {
 
     },
@@ -984,6 +1169,9 @@
 
     },
     "New Rule…" : {
+
+    },
+    "No activity" : {
 
     },
     "No Activity" : {
@@ -1055,8 +1243,38 @@
     "Not connected to the monitor. This rule isn't being evaluated." : {
 
     },
+    "Not connected." : {
+
+    },
+    "Not granted. Turn on Sidewatch Monitor in Full Disk Access; collection starts automatically." : {
+
+    },
+    "Not installed." : {
+
+    },
+    "Not signed for Endpoint Security." : {
+
+    },
+    "Notification Settings…" : {
+
+    },
+    "Notifications" : {
+
+    },
+    "Notify me when an agent exits while processes it started are still running." : {
+
+    },
     "Observed" : {
       "comment" : "Attribution evidence"
+    },
+    "OK" : {
+
+    },
+    "Old activity is removed hourly. Running services and the origins that explain them are always kept." : {
+
+    },
+    "Oldest activity" : {
+
     },
     "Oldest activity: %@." : {
 
@@ -1070,7 +1288,10 @@
     "Open Full Disk Access" : {
 
     },
-    "Open Full Disk Access Settings…" : {
+    "Open Protection Rules" : {
+
+    },
+    "Open Settings…" : {
 
     },
     "Open System Settings" : {
@@ -1124,6 +1345,9 @@
     "Prevent:" : {
 
     },
+    "Problem" : {
+
+    },
     "Process" : {
 
     },
@@ -1162,6 +1386,9 @@
     },
     "Protection Rules" : {
       "comment" : "Sidebar page"
+    },
+    "Protection rules and mode" : {
+
     },
     "Protection rules are stored and enforced by the monitor extension." : {
 
@@ -1217,7 +1444,22 @@
     "Refresh processes, ports, and history" : {
 
     },
+    "Reinstall" : {
+
+    },
     "Related Activity" : {
+
+    },
+    "Removed data isn't securely overwritten on disk." : {
+
+    },
+    "Removes all history, protection rules, and settings, and returns Sidewatch to its defaults." : {
+
+    },
+    "Removes recorded activity and finished sessions. Rules, mode, and running services are kept." : {
+
+    },
+    "Removing…" : {
 
     },
     "Rename" : {
@@ -1228,6 +1470,15 @@
     },
     "Replaced by another program" : {
       "comment" : "Agent session end reason"
+    },
+    "Requirements" : {
+
+    },
+    "Reset Preferences" : {
+
+    },
+    "Resolve the problems below to record history and enforce rules." : {
+
     },
     "Response Failed" : {
       "comment" : "Actual system response"
@@ -1241,7 +1492,22 @@
     "Restart required" : {
 
     },
+    "Restart Required" : {
+
+    },
+    "Restart to Finish Uninstalling" : {
+
+    },
     "Restart your Mac to finish installing the Sidewatch monitor extension." : {
+
+    },
+    "Restart your Mac to finish the change to the monitor extension." : {
+
+    },
+    "Restart your Mac to finish." : {
+
+    },
+    "Retention" : {
 
     },
     "Reveal in Finder" : {
@@ -1328,6 +1594,9 @@
     "Services Left Running" : {
 
     },
+    "Settings…" : {
+
+    },
     "Shared" : {
 
     },
@@ -1338,6 +1607,9 @@
 
     },
     "Shared: this process is related to more than one agent session. Check that no one still needs it before stopping it." : {
+
+    },
+    "Shortcuts" : {
 
     },
     "Show Activity from Same Process" : {
@@ -1352,6 +1624,9 @@
     "Show in Timeline" : {
 
     },
+    "Show the number of leftover processes on the Sidewatch icon." : {
+
+    },
     "Showing current processes and ports only. History and protection stay off until it's installed." : {
 
     },
@@ -1364,7 +1639,13 @@
     "Sidewatch sends a termination request (SIGTERM) to this exact process only. It may take time to exit or may ignore the request." : {
 
     },
+    "Sidewatch shows current processes and ports. Install the monitor to record agent history and enforce protection rules." : {
+
+    },
     "Signing ID" : {
+
+    },
+    "Size on disk" : {
 
     },
     "Snapshot" : {
@@ -1415,6 +1696,15 @@
     "Storage failure" : {
 
     },
+    "Storage limit" : {
+
+    },
+    "System extension" : {
+
+    },
+    "System notifications" : {
+
+    },
     "System policy doesn't allow the monitor extension to be installed." : {
 
     },
@@ -1448,16 +1738,31 @@
     "The monitor extension couldn't be activated (%@)." : {
 
     },
+    "The monitor extension is removed when you restart your Mac." : {
+
+    },
     "The monitor extension is unavailable." : {
 
     },
     "The monitor extension's code signature is invalid." : {
 
     },
+    "The monitor is already being removed." : {
+
+    },
+    "The monitor is installed but isn't collecting activity yet." : {
+
+    },
+    "The monitor is missing the Endpoint Security entitlement." : {
+
+    },
     "The monitor is missing the Endpoint Security entitlement. Activity isn't being collected." : {
 
     },
     "The monitor isn't collecting activity, so protection settings can't be applied." : {
+
+    },
+    "The monitor isn't connected, so its recorded history and rules can't be erased now. Only this app's preferences and window layout will be reset." : {
 
     },
     "The monitor request was canceled." : {
@@ -1482,6 +1787,9 @@
 
     },
     "The name or path contains an invalid character." : {
+
+    },
+    "The oldest activity is removed first when history grows past this size." : {
 
     },
     "The operation couldn't be completed." : {
@@ -1535,7 +1843,16 @@
     "The signal couldn't be sent (error %lld)." : {
 
     },
+    "The system couldn't remove the monitor extension (error %lld)." : {
+
+    },
+    "The system returned an unexpected result." : {
+
+    },
     "The timeline requires a connection to the monitor extension." : {
+
+    },
+    "This copy of Sidewatch isn't signed with the Endpoint Security entitlement." : {
 
     },
     "This copy of Sidewatch isn't signed with the Endpoint Security entitlement. Showing current processes and ports only." : {
@@ -1592,6 +1909,18 @@
     "Undo" : {
 
     },
+    "Uninstall" : {
+
+    },
+    "Uninstall the Sidewatch Monitor?" : {
+
+    },
+    "Uninstall…" : {
+
+    },
+    "Uninstalling…" : {
+
+    },
     "Unknown" : {
       "comment" : "Agent or process state"
     },
@@ -1604,13 +1933,51 @@
     "Unknown process" : {
 
     },
+    "Unknown while the monitor can't start collection." : {
+
+    },
+    "Update" : {
+
+    },
+    "Update to %@ (%@) available" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Update to %1$@ (%2$@) available"
+          }
+        }
+      }
+    },
     "Using %@ on disk." : {
 
+    },
+    "Version %@ (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Version %1$@ (%2$@)"
+          }
+        }
+      }
     },
     "View" : {
 
     },
+    "Waiting for Full Disk Access." : {
+
+    },
+    "Waiting for macOS to install and approve the monitor extension." : {
+
+    },
+    "Waiting for macOS to remove the monitor extension." : {
+
+    },
     "Waiting for the monitor to confirm these settings. The rule isn't active yet." : {
+
+    },
+    "Waiting for your approval in System Settings." : {
 
     },
     "Which services to show" : {
@@ -1639,6 +2006,433 @@
     },
     "Zoom" : {
 
+    },
+    "1 hour" : {
+      "comment" : "Disk audit idle timeout"
+    },
+    "24 hours" : {
+      "comment" : "Disk audit idle timeout"
+    },
+    "3 days" : {
+      "comment" : "Disk audit idle timeout"
+    },
+    "7 days" : {
+      "comment" : "Disk audit idle timeout"
+    },
+    "%lld hours" : {
+      "comment" : "Disk audit idle timeout"
+    },
+    "%lld files" : {
+      "comment" : "Disk audit file count",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld file"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld files"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld scan issues" : {
+      "comment" : "Disk audit scan issue count",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld scan issue"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld scan issues"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld sessions" : {
+      "comment" : "Disk audit session count",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld session"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld sessions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Agent Disk" : {
+      "comment" : "Sidebar page"
+    },
+    "Agent temporary files appear here after the first scan." : {
+      "comment" : "Disk audit empty state"
+    },
+    "Clean Eligible…" : {
+      "comment" : "Disk audit command"
+    },
+    "Clean eligible files automatically" : {
+      "comment" : "Disk audit policy"
+    },
+    "Cleanup is disabled while UI snapshots are being captured." : {
+      "comment" : "Disk audit cleanup suppression"
+    },
+    "Eligible" : {
+      "comment" : "Disk audit item state"
+    },
+    "Failed" : {
+      "comment" : "Disk audit item state"
+    },
+    "File changed during cleanup" : {
+      "comment" : "Disk audit reason"
+    },
+    "File has multiple hard links" : {
+      "comment" : "Disk audit reason"
+    },
+    "Idle timeout" : {
+      "comment" : "Disk audit policy"
+    },
+    "Idle timeout before automatic cleanup" : {
+      "comment" : "Disk audit idle timeout accessibility label"
+    },
+    "Inside a project folder" : {
+      "comment" : "Disk audit reason"
+    },
+    "Last Activity" : {
+      "comment" : "Disk audit detail"
+    },
+    "No Agent Files" : {
+      "comment" : "Disk audit empty state"
+    },
+    "No Matching Files" : {
+      "comment" : "Disk audit empty state"
+    },
+    "No file, agent, or tool matches “%@”." : {
+      "comment" : "Disk audit empty state"
+    },
+    "Not Scanned Yet" : {
+      "comment" : "Disk audit empty state"
+    },
+    "Owned by another user" : {
+      "comment" : "Disk audit reason"
+    },
+    "Provenance" : {
+      "comment" : "Disk audit detail section"
+    },
+    "Review" : {
+      "comment" : "Disk audit item state"
+    },
+    "Review required" : {
+      "comment" : "Disk audit reason fallback"
+    },
+    "Scan" : {
+      "comment" : "Disk audit command"
+    },
+    "Scanned %@" : {
+      "comment" : "Disk audit status"
+    },
+    "Scanning…" : {
+      "comment" : "Disk audit status"
+    },
+    "Selected file details" : {
+      "comment" : "Disk audit detail accessibility label"
+    },
+    "Session Log" : {
+      "comment" : "Disk audit provenance"
+    },
+    "Session log may be incomplete" : {
+      "comment" : "Disk audit reason"
+    },
+    "Sessions" : {
+      "comment" : "Disk audit detail"
+    },
+    "Size" : {
+      "comment" : "Disk audit table column"
+    },
+    "Tools" : {
+      "comment" : "Disk audit detail"
+    },
+    "Unsupported file type" : {
+      "comment" : "Disk audit reason"
+    },
+    "Waiting" : {
+      "comment" : "Disk audit item state"
+    },
+    "%@ on disk · %@ eligible" : {
+      "comment" : "Disk audit space summary"
+    },
+    "A file becomes eligible when Sidewatch sees the agent process writing its session log exit, or when that log has had no new activity for the idle timeout. Finishing a turn doesn't end a session, and a file shared by several sessions waits for all of them.\n\nSidewatch never deletes files marked Review. Automatic cleanup checks once a minute while Sidewatch is open." : {
+      "comment" : "Disk audit cleanup help popover"
+    },
+    "Agent process exited" : {
+      "comment" : "Disk audit reason"
+    },
+    "Automatic cleanup deleted %lld files and freed %@." : {
+      "comment" : "Disk audit automatic cleanup result",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatic cleanup deleted %#@files@ and freed %2$@."
+          },
+          "substitutions" : {
+            "files" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg file"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg files"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Checks once a minute while Sidewatch is open and deletes files marked Eligible." : {
+      "comment" : "Disk audit automatic cleanup tooltip"
+    },
+    "Delete %lld Eligible Files?" : {
+      "comment" : "Disk audit cleanup confirmation title",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %lld Eligible File?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %lld Eligible Files?"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Deleted" : {
+      "comment" : "Disk audit item state and reason"
+    },
+    "Deleted %lld files and freed %@." : {
+      "comment" : "Disk audit manual cleanup result",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deleted %#@files@ and freed %2$@."
+          },
+          "substitutions" : {
+            "files" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg file"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg files"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Eligible From" : {
+      "comment" : "Disk audit detail"
+    },
+    "Every claiming session exited or reached the idle timeout" : {
+      "comment" : "Disk audit reason"
+    },
+    "File couldn't be deleted" : {
+      "comment" : "Disk audit reason"
+    },
+    "How cleanup works" : {
+      "comment" : "Disk audit help button accessibility label"
+    },
+    "How long a session log can go without new activity before its files become eligible. Applies when Sidewatch hasn't seen the agent process exit." : {
+      "comment" : "Disk audit idle timeout tooltip"
+    },
+    "Looking for temporary files written by agent sessions." : {
+      "comment" : "Disk audit empty state"
+    },
+    "No files are eligible." : {
+      "comment" : "Disk audit clean button tooltip"
+    },
+    "No files were deleted. Files that changed after you reviewed them were kept." : {
+      "comment" : "Disk audit manual cleanup result"
+    },
+    "Path contains a symbolic link" : {
+      "comment" : "Disk audit reason"
+    },
+    "Permanently delete the eligible files shown in the list." : {
+      "comment" : "Disk audit clean button tooltip"
+    },
+    "Session ended or timed out; waiting a few minutes" : {
+      "comment" : "Disk audit reason"
+    },
+    "Session hasn't ended or reached the idle timeout" : {
+      "comment" : "Disk audit reason"
+    },
+    "Session reached the idle timeout" : {
+      "comment" : "Disk audit reason"
+    },
+    "Session's project folder is unknown" : {
+      "comment" : "Disk audit reason"
+    },
+    "Show" : {
+      "comment" : "Disk audit provenance button: show the path in Finder"
+    },
+    "Show %@ in Finder: %@" : {
+      "comment" : "Disk audit provenance button accessibility label: row title, file name"
+    },
+    "Show Session Log in Finder" : {
+      "comment" : "Disk audit context menu"
+    },
+    "Show in Finder" : {
+      "comment" : "Disk audit action"
+    },
+    "Sidewatch doesn't delete folders" : {
+      "comment" : "Disk audit reason"
+    },
+    "Sidewatch found no temporary files written by agent sessions." : {
+      "comment" : "Disk audit empty state"
+    },
+    "Sidewatch rescans first, then deletes only these files and only if they haven't changed. This frees %@ and can't be undone." : {
+      "comment" : "Disk audit cleanup confirmation"
+    },
+    "Sidewatch won't delete this file. Clean Eligible and automatic cleanup both skip it." : {
+      "comment" : "Disk audit detail note for review-only files"
+    },
+    "The agent edited this file but may not have created it" : {
+      "comment" : "Disk audit reason"
+    },
+    "Timestamps don't match the agent's recorded writes" : {
+      "comment" : "Disk audit reason"
+    },
+    "%@ on disk · nothing eligible" : {
+      "comment" : "Disk audit space summary when no file is eligible"
+    },
+    "Scan Issues" : {
+      "comment" : "Disk audit issues popover title"
+    },
+    "Copy All" : {
+      "comment" : "Disk audit issues popover: copy every issue"
+    },
+    "%lld scan issues. Show details." : {
+      "comment" : "Disk audit issues button accessibility label",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld scan issue. Show details."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld scan issues. Show details."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Inside an agent session log folder" : {
+      "comment" : "Disk audit reason"
+    },
+    "%lld eligible" : {
+      "comment" : "Disk audit session row: number of eligible files"
+    },
+    "Agent sessions and their temporary files" : {
+      "comment" : "Disk audit outline accessibility label"
+    },
+    "Copy Log Path" : {
+      "comment" : "Disk audit context menu"
+    },
+    "Files" : {
+      "comment" : "Disk audit session detail"
+    },
+    "Not observed" : {
+      "comment" : "Disk audit session detail: process exit not seen"
+    },
+    "Process Exit" : {
+      "comment" : "Disk audit session detail"
+    },
+    "Select a session or file to see where it came from and when it can be deleted." : {
+      "comment" : "Disk audit detail placeholder"
+    },
+    "Session %@" : {
+      "comment" : "Disk audit session title when the project is unknown: short session ID"
+    },
+    "Session %@, %@" : {
+      "comment" : "Disk audit session row accessibility label: title, agent"
+    },
+    "Session / File" : {
+      "comment" : "Disk audit outline column"
+    },
+    "Session ID" : {
+      "comment" : "Disk audit session detail"
+    },
+    "Unknown Session" : {
+      "comment" : "Disk audit session title fallback"
     }
   },
   "version" : "1.0"

@@ -200,6 +200,7 @@ enum MainMenu {
             (.timeline, #selector(MainWindowController.showTimeline(_:))),
             (.ports, #selector(MainWindowController.showPorts(_:))),
             (.leftovers, #selector(MainWindowController.showLeftovers(_:))),
+            (.diskAudit, #selector(MainWindowController.showAgentDisk(_:))),
             (.rules, #selector(MainWindowController.showRules(_:)))
         ]
         for (index, entry) in pages.enumerated() {

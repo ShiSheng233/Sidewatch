@@ -44,6 +44,12 @@ typedef void (*SWProcessCallback)(const SWProcessInfo *info, void *context);
 typedef void (*SWEndpointCallback)(const SWEndpointInfo *info, void *context);
 typedef void (*SWIssueCallback)(int32_t pid, SWQueryStage stage, int32_t code, void *context);
 
+typedef void (*SWSessionWriterCallback)(const SWProcessIdentity *identity,
+                                         const char *path, void *context);
+/* Current-user JSONL write descriptors, with process start identity rechecked.
+ * A missing descriptor is never evidence that a process exited. */
+int32_t sw_probe_session_writers(SWSessionWriterCallback writer, void *context);
+
 /* Synchronous callbacks; all callback pointers are borrowed until callback return. */
 int32_t sw_probe_capture(SWProcessCallback process, SWEndpointCallback endpoint,
                          SWIssueCallback issue, void *context);

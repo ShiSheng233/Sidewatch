@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added Agent Disk for agent session JSONL, account/profile discovery, artifact disk usage and provenance, manual eligible cleanup, and opt-in scheduled cleanup after an observed log-writer process exits or an inactivity timeout. Cleanup validates temporary-file ownership, creation evidence, project exclusions, and filesystem identity; uncertain artifacts and directories remain for review.
+- Changing Agent Disk's idle timeout cancels an in-flight automatic cleanup and rescans, so a scan captured under a shorter timeout can't delete files after the timeout is extended.
 - Added shared process/execution identities, Agent provenance, project recognition, configurable protection rules, and per-user GRDB history using one complete `v1_initial` schema.
 - Added capture boundaries and collection gaps to history snapshots, preserving completeness information across database reopening.
 - Added the Endpoint Security system extension, immutable per-user modes/rules, authenticated XPC, and host lifecycle services. Corrected provenance routing, startup identity reconciliation, deadline handling, response/subscription failure state, bounded indexes, and storage/memory retention synchronization.

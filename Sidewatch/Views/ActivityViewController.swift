@@ -225,7 +225,7 @@ final class ActivityViewController: NSViewController, NSTableViewDataSource, NST
                 ViewFactory.column("certainty", title: String(localized: "Attribution"), width: 130),
                 ViewFactory.column("command", title: String(localized: "Command"), width: 240)
             ]
-        case .rules:
+        case .rules, .diskAudit:
             return []
         }
     }
@@ -241,7 +241,7 @@ final class ActivityViewController: NSViewController, NSTableViewDataSource, NST
         case .timeline: items = viewModel.timeline.map(Item.activity)
         case .ports: items = viewModel.visiblePorts.map(Item.port)
         case .leftovers: items = viewModel.visibleLeftovers.map(Item.leftover)
-        case .rules: items = []
+        case .rules, .diskAudit: items = []
         }
         if previousIDs.isEmpty || items.isEmpty {
             table.reloadData()
@@ -319,7 +319,7 @@ final class ActivityViewController: NSViewController, NSTableViewDataSource, NST
                 )
             }
             footerLabel.stringValue = String(localized: "\(items.count) leftover processes")
-        case .rules:
+        case .rules, .diskAudit:
             break
         }
         footerLabel.setAccessibilityLabel(footerLabel.stringValue)

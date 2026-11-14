@@ -9,6 +9,7 @@ final class MainWindowController: NSWindowController, NSToolbarDelegate, NSSearc
     private let content: ContentContainerViewController
     private let inspector: InspectorViewController
     private var inspectorItem: NSSplitViewItem?
+    private var inspectorVisibleBeforeDisk: Bool?
     private let modePill = StatusPillView()
     private weak var searchItem: NSSearchToolbarItem?
     private var searchDebounce: Task<Void, Never>?
@@ -68,10 +69,11 @@ final class MainWindowController: NSWindowController, NSToolbarDelegate, NSSearc
         viewModel.observe { [weak self] change in
             guard let self else { return }
             if change.contains(.status) || change.contains(.configuration) { updateModePill() }
-            if change.contains(.page) { updateSubtitle() }
+            if change.contains(.page) { updateSubtitle(); updateInspectorVisibility() }
         }
         updateModePill()
         updateSubtitle()
+        updateInspectorVisibility()
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
@@ -176,9 +178,28 @@ final class MainWindowController: NSWindowController, NSToolbarDelegate, NSSearc
         window?.subtitle = DisplayText.page(viewModel.page)
     }
 
+    /// The disk table needs the inspector's width at the minimum window size, so the inspector
+    /// is collapsed while that page is visible. Leaving the page restores the previous state.
+    private func updateInspectorVisibility() {
+        guard let inspectorItem else { return }
+        if viewModel.page == .diskAudit {
+            if inspectorVisibleBeforeDisk == nil {
+                inspectorVisibleBeforeDisk = !inspectorItem.isCollapsed
+            }
+            if !inspectorItem.isCollapsed { inspectorItem.isCollapsed = true }
+        } else if let visible = inspectorVisibleBeforeDisk {
+            inspectorVisibleBeforeDisk = nil
+            inspectorItem.isCollapsed = !visible
+        }
+    }
+
     // MARK: Commands (responder chain)
 
     @objc func refresh(_ sender: Any?) {
+        if viewModel.page == .diskAudit {
+            content.agentDisk.scan()
+            return
+        }
         viewModel.refresh()
         if viewModel.isHistoryAvailable { viewModel.reloadTimeline() }
     }
@@ -191,7 +212,19 @@ final class MainWindowController: NSWindowController, NSToolbarDelegate, NSSearc
     @objc func showTimeline(_ sender: Any?) { viewModel.setPage(.timeline) }
     @objc func showPorts(_ sender: Any?) { viewModel.setPage(.ports) }
     @objc func showLeftovers(_ sender: Any?) { viewModel.setPage(.leftovers) }
+    @objc func showAgentDisk(_ sender: Any?) { viewModel.setPage(.diskAudit) }
     @objc func showRules(_ sender: Any?) { viewModel.setPage(.rules) }
+
+    #if DEBUG
+    /// Debug snapshot support: let the disk page finish its first real scan before capture.
+    func awaitDiskAuditScan() async {
+        await content.agentDisk.awaitInitialScan()
+    }
+
+    func showDiskAuditIssues() -> NSPopover? {
+        content.agentDisk.debugShowIssues()
+    }
+    #endif
 
     @objc func newRule(_ sender: Any?) {
         viewModel.setPage(.rules)
@@ -214,6 +247,7 @@ final class MainWindowController: NSWindowController, NSToolbarDelegate, NSSearc
         case #selector(showTimeline(_:)): menuItem.state = viewModel.page == .timeline ? .on : .off
         case #selector(showPorts(_:)): menuItem.state = viewModel.page == .ports ? .on : .off
         case #selector(showLeftovers(_:)): menuItem.state = viewModel.page == .leftovers ? .on : .off
+        case #selector(showAgentDisk(_:)): menuItem.state = viewModel.page == .diskAudit ? .on : .off
         case #selector(showRules(_:)): menuItem.state = viewModel.page == .rules ? .on : .off
         case #selector(clearHistory(_:)), #selector(newRule(_:)): return viewModel.isHistoryAvailable
         case #selector(eraseAllData(_:)): return !viewModel.isErasingData && !viewModel.isRemovingMonitor
@@ -288,7 +322,7 @@ final class SidebarViewController: NSViewController, NSTableViewDataSource, NSTa
         case .rules:
             let enabled = rules.configuration?.rules.filter(\.enabled).count ?? 0
             return enabled > 0 ? (enabled, .secondaryLabelColor) : nil
-        case .timeline:
+        case .timeline, .diskAudit:
             return nil
         }
     }
@@ -436,6 +470,7 @@ final class ContentContainerViewController: NSViewController {
     private let rules: RuleViewModel
     let activityList: ActivityViewController
     let ruleEditor: RuleEditorViewController
+    let agentDisk: AgentDiskViewController
 
     private let titleLabel = NSTextField(labelWithString: "")
     private let summaryLabel = NSTextField(labelWithString: "")
@@ -448,7 +483,12 @@ final class ContentContainerViewController: NSViewController {
         self.rules = rules
         activityList = ActivityViewController(viewModel: viewModel)
         ruleEditor = RuleEditorViewController(viewModel: viewModel, rules: rules)
+        agentDisk = AgentDiskViewController(activity: viewModel, viewModel: AgentDiskViewModel())
         super.init(nibName: nil, bundle: nil)
+        agentDisk.onSummaryChange = { [weak self] in
+            guard let self, self.viewModel.page == .diskAudit else { return }
+            self.updateHeader()
+        }
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
@@ -492,7 +532,7 @@ final class ContentContainerViewController: NSViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        for child in [activityList, ruleEditor] as [NSViewController] {
+        for child in [activityList, ruleEditor, agentDisk] as [NSViewController] {
             addChild(child)
             child.view.translatesAutoresizingMaskIntoConstraints = false
             pageHost.addSubview(child.view)
@@ -544,8 +584,9 @@ final class ContentContainerViewController: NSViewController {
     }
 
     private func apply(_ page: SidewatchPage) {
-        activityList.view.isHidden = page == .rules
+        activityList.view.isHidden = page == .rules || page == .diskAudit
         ruleEditor.view.isHidden = page != .rules
+        agentDisk.view.isHidden = page != .diskAudit
         updateHeader()
     }
 
@@ -553,7 +594,9 @@ final class ContentContainerViewController: NSViewController {
         let page = viewModel.page
         titleLabel.stringValue = DisplayText.page(page)
         summaryLabel.stringValue = summary(for: page)
-        notices.show(viewModel.notices)
+        // Disk auditing is independent of the monitor extension, so its page shows its own
+        // scan issues and cleanup results instead of the global extension notices.
+        notices.show(page == .diskAudit ? agentDisk.pageNotices : viewModel.notices)
     }
 
     private func summary(for page: SidewatchPage) -> String {
@@ -574,6 +617,8 @@ final class ContentContainerViewController: NSViewController {
             return history
                 ? String(localized: "\(projection.leftovers.count) still running after their agent exited")
                 : String(localized: "Needs monitor history")
+        case .diskAudit:
+            return agentDisk.summaryText
         case .rules:
             let all = rules.configuration?.rules ?? []
             let enabled = all.filter(\.enabled).count
