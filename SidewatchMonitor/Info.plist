@@ -11,5 +11,6 @@
     <key>CFBundleVersion</key><string>$(CURRENT_PROJECT_VERSION)</string>
     <key>LSMinimumSystemVersion</key><string>$(MACOSX_DEPLOYMENT_TARGET)</string>
     <key>LSBackgroundOnly</key><true/>
+    <key>NSSystemExtensionUsageDescription</key><string>Sidewatch records agent process and file activity and applies the protection rules you enable.</string>
     <key>NSEndpointSecurityMachServiceName</key><string>dev.shisheng.Sidewatch.Monitor</string>
 </dict></plist>

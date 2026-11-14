@@ -88,6 +88,9 @@ codesign -d --entitlements - --xml "$APP" 2>/dev/null |
   grep -q com.apple.developer.system-extension.install || fail "app lacks system-extension.install"
 codesign -d --entitlements - --xml "$EXT" 2>/dev/null |
   grep -q com.apple.developer.endpoint-security.client || fail "extension lacks endpoint-security.client"
+# sysextd rejects Endpoint Security extensions without this key ("validation").
+plutil -extract NSSystemExtensionUsageDescription raw "$EXT/Contents/Info.plist" >/dev/null 2>&1 ||
+  fail "extension Info.plist lacks NSSystemExtensionUsageDescription"
 
 VERSION=$(defaults read "$APP/Contents/Info" CFBundleShortVersionString)
 BUILD=$(defaults read "$APP/Contents/Info" CFBundleVersion)
