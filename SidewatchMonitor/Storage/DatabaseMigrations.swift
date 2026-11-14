@@ -288,12 +288,9 @@ enum DatabaseMigrations {
                     WHERE ended_at_us IS NOT NULL;
                 """)
 
-            let defaultAgents = """
-                [{"id":"codex","name":"Codex","executableNames":["codex"],"scriptPathComponents":["@openai/codex/bin/codex.js"]},\
-                {"id":"claude","name":"Claude Code","executableNames":["claude"],"scriptPathComponents":["@anthropic-ai/claude-code/cli.js"]},\
-                {"id":"gemini","name":"Gemini CLI","executableNames":["gemini"],"scriptPathComponents":["@google/gemini-cli/dist/index.js"]},\
-                {"id":"opencode","name":"OpenCode","executableNames":["opencode"],"scriptPathComponents":[]}]
-                """
+            // Seed the initial configuration from the code's built-in definitions so the two
+            // cannot drift apart.
+            let defaultAgents = try ConfigurationJSON.encodeAgents(AgentDefinition.defaults)
 
             try db.execute(
                 sql: """

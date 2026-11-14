@@ -64,13 +64,21 @@ struct AgentDefinition: Hashable, Codable, Sendable, Identifiable {
     var name: String
     var executableNames: [String]
     var scriptPathComponents: [String]
+    /// Trailing directory components that identify an installer which names the binary by
+    /// version rather than by command. Claude Code's native installer resolves `claude` to
+    /// `~/.local/share/claude/versions/<version>`, so the executable basename is a version string.
+    var installDirectoryComponents: [String] = []
+
     static let defaults: [Self] = [
         .init(id: "codex", name: "Codex", executableNames: ["codex"], scriptPathComponents: ["@openai/codex/bin/codex.js"]),
-        .init(id: "claude", name: "Claude Code", executableNames: ["claude"], scriptPathComponents: ["@anthropic-ai/claude-code/cli.js"]),
+        .init(id: "claude", name: "Claude Code", executableNames: ["claude"], scriptPathComponents: ["@anthropic-ai/claude-code/cli.js"],
+              installDirectoryComponents: ["claude", "versions"]),
         .init(id: "gemini", name: "Gemini CLI", executableNames: ["gemini"], scriptPathComponents: ["@google/gemini-cli/dist/index.js"]),
-        .init(id: "opencode", name: "OpenCode", executableNames: ["opencode"], scriptPathComponents: [])
+        .init(id: "opencode", name: "OpenCode", executableNames: ["opencode"], scriptPathComponents: []),
+        .init(id: "omp", name: "omp", executableNames: ["omp"], scriptPathComponents: [])
     ]
 }
+
 
 struct AgentSession: Hashable, Codable, Sendable, Identifiable {
     var id: String

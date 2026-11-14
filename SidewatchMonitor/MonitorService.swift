@@ -419,9 +419,12 @@ final class MonitorService: NSObject, NSXPCListenerDelegate, @unchecked Sendable
         }
         for agent in configuration.agentDefinitions {
             guard !agent.id.isEmpty, !agent.name.isEmpty,
-                  !(agent.executableNames.isEmpty && agent.scriptPathComponents.isEmpty),
+                  !(agent.executableNames.isEmpty && agent.scriptPathComponents.isEmpty && agent.installDirectoryComponents.isEmpty),
                   agent.executableNames.allSatisfy({ !$0.isEmpty && !$0.contains("/") && !$0.contains("\0") }),
-                  agent.scriptPathComponents.allSatisfy({ !$0.isEmpty && !$0.contains("\0") }) else { throw BrokerError.invalidConfiguration }
+                  agent.scriptPathComponents.allSatisfy({ !$0.isEmpty && !$0.contains("\0") }),
+                  agent.installDirectoryComponents.count <= 8,
+                  agent.installDirectoryComponents.allSatisfy({ !$0.isEmpty && !$0.contains("/") && !$0.contains("\0") && $0 != "." && $0 != ".." })
+            else { throw BrokerError.invalidConfiguration }
         }
     }
 }

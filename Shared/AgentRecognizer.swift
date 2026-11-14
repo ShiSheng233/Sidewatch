@@ -2,9 +2,11 @@ import Foundation
 
 /// Recognizes known agent CLIs from structured execution data.
 ///
-/// Matching is deliberately narrow: the executable basename must be an exact known name, or a
-/// known JavaScript CLI script must appear as the positional script of `node`/`bun`. Words that
-/// merely appear in arguments (for example `echo codex` or `sh -c "claude ..."`) never match.
+/// Matching is deliberately narrow: the executable basename must be an exact known name, the
+/// executable must sit in a known versioned install directory, or a known JavaScript CLI script
+/// must appear as the positional script of `node`/`bun`. Words that merely appear in arguments
+/// (for example `echo codex` or `sh -c "claude ..."`) never match, and neither does `argv[0]`,
+/// which the launching process chooses freely.
 enum AgentRecognizer {
     private static let interpreters: Set<String> = ["node", "bun"]
 
@@ -14,6 +16,17 @@ enum AgentRecognizer {
 
         for definition in definitions where definition.executableNames.contains(executableName) {
             return definition
+        }
+
+        // The kernel reports the resolved executable path, so a versioned binary reached through a
+        // `claude` symlink is identified by its install directory, never by argv[0].
+        let directory = pathComponents((execution.executable as NSString).deletingLastPathComponent)
+        for definition in definitions {
+            let layout = definition.installDirectoryComponents
+            guard !layout.isEmpty, layout.count <= directory.count else { continue }
+            if directory.suffix(layout.count).elementsEqual(layout) {
+                return definition
+            }
         }
 
         guard interpreters.contains(executableName.lowercased()),
