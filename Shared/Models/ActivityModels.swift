@@ -274,7 +274,7 @@ struct WireEnvelope<Value: Codable & Sendable>: Codable, Sendable {
 struct EmptyReply: Codable, Sendable {}
 
 enum MonitorWire {
-    static let version = 1
+    static let version = 2
     static let serviceName = "dev.shisheng.Sidewatch.Monitor"
     static let extensionID = "dev.shisheng.Sidewatch.Monitor"
     static let hostID = "dev.shisheng.Sidewatch"

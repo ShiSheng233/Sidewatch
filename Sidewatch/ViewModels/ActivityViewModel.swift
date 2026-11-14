@@ -259,6 +259,60 @@ final class ActivityViewModel {
     func openFullDiskAccess() { extensionManager.openFullDiskAccess() }
     func openExtensionSettings() { extensionManager.openExtensionSettings() }
 
+    /// True while the system is asked for the extension state or the service is being reached.
+    var isCheckingMonitor: Bool { extensionManager.operation == .checking || link == .connecting }
+    private(set) var isRemovingMonitor = false
+    private(set) var isErasingData = false
+
+    /// Asks the system for the extension state again and re-establishes the service connection.
+    func checkMonitorStatus() {
+        extensionManager.refreshStatus()
+        reconnectDelay = 2
+        switch link {
+        case .connected: refresh()
+        case .connecting: break
+        case .idle, .disconnected, .failed: connect()
+        }
+        notify(.status)
+    }
+
+    /// Uninstalls the extension. With `eraseData`, the monitor first erases this user's data and
+    /// deletes its store when it stops, and this app's preferences are reset.
+    func uninstallMonitor(eraseData: Bool) async -> MonitorRemovalOutcome {
+        guard !isRemovingMonitor else { return .failed(String(localized: "The monitor is already being removed.")) }
+        isRemovingMonitor = true
+        notify(.status)
+        defer {
+            isRemovingMonitor = false
+            notify(.all)
+        }
+        var armed = false
+        if eraseData, link == .connected {
+            do {
+                try await connection.eraseAllData()
+                try await connection.prepareForRemoval(true)
+                armed = true
+            } catch {
+                return .failed(Self.message(for: error))
+            }
+        }
+        reconnectTask?.cancel()
+        let outcome = await extensionManager.deactivate()
+        switch outcome {
+        case .removed:
+            connection.disconnect()
+            link = .idle
+            discardMonitorState()
+            if eraseData { resetLocalState() }
+        case .afterRestart:
+            if eraseData { resetLocalState() }
+        case .canceled, .failed:
+            if armed { try? await connection.prepareForRemoval(false) }
+        }
+        refresh()
+        return outcome
+    }
+
     func perform(_ action: StatusNotice.Action) {
         switch action {
         case .installExtension: activateExtension()
@@ -297,7 +351,7 @@ final class ActivityViewModel {
 
     /// Retries only while the OS reports the extension as enabled; install and approval stay explicit.
     private func scheduleReconnect() {
-        guard extensionManager.availability == .active else { return }
+        guard extensionManager.availability == .active, extensionManager.operation != .uninstalling else { return }
         reconnectTask?.cancel()
         let delay = reconnectDelay
         reconnectDelay = min(reconnectDelay * 2, 60)
@@ -309,7 +363,8 @@ final class ActivityViewModel {
     }
 
     private func extensionStateChanged() {
-        if extensionManager.availability == .active, link != .connected, link != .connecting {
+        if extensionManager.availability == .active, extensionManager.operation == nil,
+           link != .connected, link != .connecting {
             reconnectDelay = 2
             connect()
         }
@@ -677,6 +732,50 @@ final class ActivityViewModel {
         }
     }
 
+    /// Erases everything Sidewatch stored: the monitor's history, rules, mode, and retention
+    /// settings for this account (when connected), and this app's preferences.
+    func eraseAllData() async -> String? {
+        guard !isErasingData else { return nil }
+        isErasingData = true
+        notify(.status)
+        defer {
+            isErasingData = false
+            notify(.all)
+        }
+        if link == .connected {
+            do {
+                try await connection.eraseAllData()
+            } catch {
+                return Self.message(for: error)
+            }
+        }
+        resetLocalState()
+        timeline = []
+        timelineCursor = nil
+        refresh()
+        if isHistoryAvailable { reloadTimeline() }
+        return nil
+    }
+
+    /// Forgets data received from a monitor that is no longer installed.
+    private func discardMonitorState() {
+        monitorSnapshot = nil
+        health = nil
+        timeline = []
+        timelineCursor = nil
+        timelineState = .unavailable
+        relatedActivity = .idle
+        controlFeedback = nil
+    }
+
+    private func resetLocalState() {
+        AppPreferences.shared.resetAll()
+        timelineFilter = TimelineFilter()
+        agentServicesOnly = false
+        controlFeedback = nil
+        clearInspector()
+    }
+
     // MARK: Configuration
 
     /// Applies a configuration acknowledged by the extension (persisted selected intent).
@@ -750,7 +849,8 @@ final class ActivityViewModel {
         return result.sorted { $0.severity.rawValue > $1.severity.rawValue }
     }
 
-    private var extensionFailureMessage: String {
+    /// Why the system reports the extension as unavailable, for notices and Settings.
+    var extensionFailureMessage: String {
         switch extensionManager.errorCode {
         case "codeSignature":
             return String(localized: "The monitor extension's code signature is invalid.")

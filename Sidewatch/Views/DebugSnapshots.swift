@@ -23,6 +23,14 @@ enum DebugSnapshots {
                     let name = "\(page.rawValue)-\(appearance == .aqua ? "light" : "dark").png"
                     write(window, to: directory.appendingPathComponent(name))
                 }
+                for pane in SettingsPane.allCases {
+                    AppDelegate.shared?.showSettings(pane)
+                    try? await Task.sleep(for: .milliseconds(900))
+                    guard let settings = NSApp.windows.first(where: { $0.windowController is SettingsWindowController }) else { continue }
+                    let name = "settings-\(pane.rawValue)-\(appearance == .aqua ? "light" : "dark").png"
+                    write(settings, to: directory.appendingPathComponent(name))
+                }
+                window.makeKeyAndOrderFront(nil)
             }
             NSApp.terminate(nil)
         }

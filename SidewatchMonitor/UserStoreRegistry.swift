@@ -28,6 +28,29 @@ actor UserStoreRegistry {
         return store
     }
 
+    /// Closes the user's store and deletes its database files and directory. The shared
+    /// parent directories are removed too once no user remains. Used only after the user
+    /// erased their data and is uninstalling the extension.
+    func removeStore(for userID: UInt32) throws {
+        if let store = stores.removeValue(forKey: userID) { try store.close() }
+        let users = try Self.openUsersDirectory()
+        defer { close(users) }
+        let name = String(userID)
+        let user = openat(users, name, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
+        if user < 0 {
+            guard errno == ENOENT else { throw Self.posixError() }
+        } else {
+            defer { close(user) }
+            for file in ["activity.sqlite-wal", "activity.sqlite-shm", "activity.sqlite"] {
+                if unlinkat(user, file, 0) != 0 && errno != ENOENT { throw Self.posixError() }
+            }
+        }
+        if unlinkat(users, name, AT_REMOVEDIR) != 0 && errno != ENOENT { throw Self.posixError() }
+        // Best effort: other users' stores keep the parents in place (ENOTEMPTY).
+        let root = "/Library/Application Support/dev.shisheng.Sidewatch"
+        if rmdir(root + "/Users") == 0 { _ = rmdir(root) }
+    }
+
     func knownUserIDs() throws -> [UInt32] {
         let users = try Self.openUsersDirectory()
         defer { close(users) }

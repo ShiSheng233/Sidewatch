@@ -25,6 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var viewModel: ActivityViewModel?
     private var rules: RuleViewModel?
     private var windowController: MainWindowController?
+    private var settingsController: SettingsWindowController?
     private var notifiedLeftovers: Set<String> = []
     private var notificationsAuthorized: Bool?
 
@@ -46,6 +47,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         viewModel.observe { [weak self] change in
             if change.contains(.rows) { self?.leftoversChanged() }
         }
+        NotificationCenter.default.addObserver(forName: AppPreferences.didChange, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.leftoversChanged() }
+        }
+        NotificationCenter.default.addObserver(forName: AppPreferences.didReset, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.preferencesReset() }
+        }
         viewModel.start()
         #if DEBUG
         if let window = controller.window { DebugSnapshots.run(window: window, viewModel: viewModel) }
@@ -65,6 +72,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
 
+    // MARK: Windows
+
+    func showMainWindow() {
+        windowController?.showWindow(nil)
+        windowController?.window?.makeKeyAndOrderFront(nil)
+    }
+
+    func showSettings(_ pane: SettingsPane? = nil) {
+        guard let viewModel, let rules else { return }
+        let controller = settingsController ?? SettingsWindowController(viewModel: viewModel, rules: rules)
+        settingsController = controller
+        if let pane { controller.show(pane, animated: controller.window?.isVisible == true) }
+        controller.showWindow(nil)
+        controller.window?.makeKeyAndOrderFront(nil)
+    }
+
+    @objc func showSettingsWindow(_ sender: Any?) { showSettings() }
+    @objc func showMonitorSettings(_ sender: Any?) { showSettings(.monitor) }
+    @objc func showDataSettings(_ sender: Any?) { showSettings(.data) }
+
     // MARK: Leftover reminders
 
     /// Badges the Dock icon and posts one reminder per newly confirmed leftover process.
@@ -74,14 +101,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         let leftovers = viewModel.projection.leftovers
-        NSApp.dockTile.badgeLabel = leftovers.isEmpty ? nil : leftovers.count.formatted()
+        let preferences = AppPreferences.shared
+        NSApp.dockTile.badgeLabel = leftovers.isEmpty || !preferences.leftoverBadge ? nil : leftovers.count.formatted()
 
         let current = Set(leftovers.map(\.id))
         let fresh = leftovers.filter { !notifiedLeftovers.contains($0.id) }
         notifiedLeftovers.formIntersection(current)
         guard !fresh.isEmpty else { return }
         notifiedLeftovers.formUnion(fresh.map(\.id))
-        postReminder(for: fresh)
+        // Reminders that are switched off are still marked seen, so turning them back on
+        // doesn't replay old leftovers.
+        if preferences.leftoverNotifications { postReminder(for: fresh) }
+    }
+
+    /// After Erase All Data: forget which leftovers were announced and withdraw old reminders.
+    private func preferencesReset() {
+        notifiedLeftovers = []
+        let center = UNUserNotificationCenter.current()
+        center.removeAllDeliveredNotifications()
+        center.removeAllPendingNotificationRequests()
+        leftoversChanged()
     }
 
     private func postReminder(for leftovers: [LeftoverRow]) {
@@ -120,8 +159,8 @@ enum MainMenu {
         let app = submenu(appName, in: main)
         app.addItem(withTitle: String(localized: "About \(appName)"), action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
         app.addItem(.separator())
-        app.addItem(withTitle: String(localized: "Install Monitor Extension…"), action: #selector(MainWindowController.installExtension(_:)), keyEquivalent: "")
-        app.addItem(withTitle: String(localized: "Open Full Disk Access Settings…"), action: #selector(MainWindowController.openFullDiskAccessSettings(_:)), keyEquivalent: "")
+        app.addItem(withTitle: String(localized: "Settings…"), action: #selector(AppDelegate.showSettingsWindow(_:)), keyEquivalent: ",")
+        app.addItem(withTitle: String(localized: "Manage Monitor…"), action: #selector(AppDelegate.showMonitorSettings(_:)), keyEquivalent: "")
         app.addItem(.separator())
         let services = NSMenuItem(title: String(localized: "Services"), action: nil, keyEquivalent: "")
         services.submenu = NSMenu()
@@ -139,6 +178,7 @@ enum MainMenu {
         file.addItem(withTitle: String(localized: "New Protection Rule…"), action: #selector(MainWindowController.newRule(_:)), keyEquivalent: "n")
         file.addItem(.separator())
         file.addItem(withTitle: String(localized: "Clear History…"), action: #selector(MainWindowController.clearHistory(_:)), keyEquivalent: "")
+        file.addItem(withTitle: String(localized: "Erase All Data…"), action: #selector(MainWindowController.eraseAllData(_:)), keyEquivalent: "")
         file.addItem(.separator())
         file.addItem(withTitle: String(localized: "Close Window"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
 

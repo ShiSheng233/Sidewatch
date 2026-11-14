@@ -60,6 +60,60 @@ enum RetentionPolicy {
         return deleted
     }
 
+    /// Erase All Data. Removes every recorded row, including the source chains of
+    /// running services and the control audit, and replaces the configuration with
+    /// the built-in defaults committed as the next revision, so revisions stay
+    /// monotonic. The metadata watermark and the AUTOINCREMENT sequences are never
+    /// reset. Returns the new current configuration.
+    static func eraseAll(db: Database) throws -> MonitorConfiguration {
+        try db.execute(sql: "DELETE FROM activities")
+
+        try db.execute(sql: """
+            DELETE FROM capture_gaps;
+            DELETE FROM listener_intervals;
+            DELETE FROM control_actions;
+            DELETE FROM execution_sessions;
+            DELETE FROM agent_sessions;
+            DELETE FROM execution_edges;
+            UPDATE executions SET parent_execution_id = NULL, responsible_execution_id = NULL
+                WHERE parent_execution_id IS NOT NULL OR responsible_execution_id IS NOT NULL;
+            DELETE FROM executions;
+            DELETE FROM process_instances;
+            DELETE FROM projects;
+            DELETE FROM capture_runs;
+            DELETE FROM boot_epochs;
+            """)
+
+        let maxRevision: Int64 = try Int64.fetchOne(
+            db, sql: "SELECT COALESCE(MAX(revision), 0) FROM configuration_versions") ?? 0
+        var defaults = MonitorConfiguration()
+        defaults.revision = maxRevision + 1
+        try db.execute(
+            sql: """
+                INSERT INTO configuration_versions
+                    (revision, mode, format_version, rules_json, agent_definitions_json,
+                     retention_days, storage_budget_bytes, committed_at_us)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+            arguments: [
+                defaults.revision,
+                defaults.mode.rawValue,
+                HistoryQueries.configurationFormatVersion,
+                try ConfigurationJSON.encodeRules(defaults.rules),
+                try ConfigurationJSON.encodeAgents(defaults.agentDefinitions),
+                Int64(defaults.retentionDays),
+                defaults.storageBudgetBytes,
+                MicroTime.value(Date()),
+            ])
+        try db.execute(
+            sql: "UPDATE preferences SET current_revision = ? WHERE id = 1",
+            arguments: [defaults.revision])
+        try db.execute(
+            sql: "DELETE FROM configuration_versions WHERE revision <> ?",
+            arguments: [defaults.revision])
+        return defaults
+    }
+
     // MARK: - Budget
 
     private static func enforceBudget(db: Database, budget: Int64) throws -> Int64 {

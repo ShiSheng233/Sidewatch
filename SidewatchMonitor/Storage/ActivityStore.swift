@@ -335,6 +335,39 @@ final class ActivityStore: @unchecked Sendable {
         }
     }
 
+    /// Removes all recorded data and resets the configuration to the built-in defaults
+    /// at the next revision, then compacts the file so removed pages don't linger.
+    /// Returns the configuration that is now current.
+    func eraseAll() async throws -> MonitorConfiguration {
+        let configuration: MonitorConfiguration
+        do {
+            configuration = try await pool.write { db in
+                try RetentionPolicy.eraseAll(db: db)
+            }
+            Diagnostics.storage.notice(
+                "All data erased; configuration revision \(configuration.revision, privacy: .public)")
+        } catch {
+            Self.logStorageFailure("erase", error)
+            throw error
+        }
+        do {
+            try await compact()
+        } catch {
+            // The rows are gone; a failed compaction only leaves free pages behind.
+            Self.logStorageFailure("compaction", error)
+        }
+        return configuration
+    }
+
+    /// Rebuilds the database file and truncates the write-ahead log.
+    func compact() async throws {
+        try await pool.barrierWriteWithoutTransaction { db in
+            try db.execute(sql: "PRAGMA wal_checkpoint(TRUNCATE)")
+            try db.execute(sql: "VACUUM")
+            try db.execute(sql: "PRAGMA wal_checkpoint(TRUNCATE)")
+        }
+    }
+
     func retain(now: Date) async throws {
         do {
             let deleted = try await pool.write { db in

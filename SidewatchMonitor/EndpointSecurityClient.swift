@@ -406,15 +406,19 @@ final class EndpointSecurityClient: @unchecked Sendable {
             let failure = Self.startFailure(result)
             stateLock.lock()
             started = false
+            // The broker retries while waiting for Full Disk Access; report only changes.
+            let changed = availability != failure.availability || statusMessage != failure.message
             availability = failure.availability
             statusMessage = failure.message
             let identifiers = Set(users.keys)
             let health = healthLocked(userID: nil)
             stateLock.unlock()
-            publishHealth(identifiers)
-            Diagnostics.endpointSecurity.error(
-                "es_new_client failed result=\(result.rawValue)"
-            )
+            if changed {
+                publishHealth(identifiers)
+                Diagnostics.endpointSecurity.error(
+                    "es_new_client failed result=\(result.rawValue)"
+                )
+            }
             return health
         }
 

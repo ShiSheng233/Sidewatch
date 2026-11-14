@@ -163,6 +163,15 @@ final class RuleViewModel {
         await submit { $0.rules.removeAll { $0.id == ruleID } }
     }
 
+    /// History retention and storage budget, enforced by the monitor's hourly maintenance.
+    func setRetention(days: Int) async -> Bool {
+        await submit { $0.retentionDays = days }
+    }
+
+    func setStorageBudget(bytes: Int64) async -> Bool {
+        await submit { $0.storageBudgetBytes = bytes }
+    }
+
     func clearError() {
         lastError = nil
         notify()

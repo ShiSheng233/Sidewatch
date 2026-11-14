@@ -794,6 +794,69 @@ final class ActivityStoreTests: XCTestCase {
         }
     }
 
+    // MARK: - Erase all
+
+    func testEraseAllRemovesEveryRowAndResetsConfigurationToNextRevision() async throws {
+        let path = try makePath()
+        let store = try ActivityStore(path: path)
+        var configured = MonitorConfiguration()
+        configured.revision = 2
+        configured.mode = .dryRun
+        configured.retentionDays = 30
+        configured.rules = [ProtectionRule(name: "Temp", target: .directory, path: "/tmp", operations: [.delete])]
+        try await store.saveConfiguration(configured)
+
+        // A running execution is kept by Clear History; Erase All must remove it too.
+        let running = makeExecution(pid: 300, start: baseDate)
+        let session = makeSession(id: "session-erase", root: running.identity, startedAt: baseDate)
+        _ = try await store.ingest(makeBatch(
+            executions: [running],
+            sessions: [session],
+            associations: [ExecutionAssociation(execution: running.identity, sessionID: session.id, evidence: .observed)],
+            activities: [makeActivity(sequence: 1, execution: running.identity, occurredAt: baseDate,
+                                      sessionIDs: [session.id], revision: 2, mode: .dryRun)],
+            gaps: [CollectionGap(captureID: "capture", occurredAt: baseDate, reason: "sequenceGap", missingCount: 1)]))
+        try await store.recordControl(ControlAction(
+            id: "control-erase", execution: running.identity, operation: .stop, requestedAt: baseDate,
+            signalSent: true, exitConfirmed: false, errorCode: nil))
+        let before = try await store.page(.init(limit: 10))
+        let originalID = try XCTUnwrap(before.activities.first?.id)
+
+        let reset = try await store.eraseAll()
+        XCTAssertEqual(reset.revision, 3)
+        XCTAssertEqual(reset.mode, .recordOnly)
+        XCTAssertTrue(reset.rules.isEmpty)
+        XCTAssertEqual(reset.retentionDays, MonitorConfiguration().retentionDays)
+        XCTAssertEqual(reset.agentDefinitions, AgentDefinition.defaults)
+        try store.close()
+
+        let reopened = try ActivityStore(path: path)
+        defer { try? reopened.close() }
+        let snapshot = try await reopened.snapshot(health: .init(availability: .active))
+        XCTAssertEqual(snapshot.configuration, reset)
+        XCTAssertTrue(snapshot.graph.executions.isEmpty)
+        XCTAssertTrue(snapshot.graph.sessions.isEmpty)
+        XCTAssertTrue(snapshot.graph.edges.isEmpty)
+        XCTAssertTrue(snapshot.captures.isEmpty)
+        XCTAssertTrue(snapshot.gaps.isEmpty)
+        XCTAssertNil(snapshot.oldestActivity)
+        XCTAssertEqual(snapshot.watermark, before.watermark)
+        let emptied = try await reopened.page(.init(limit: 10))
+        XCTAssertTrue(emptied.activities.isEmpty)
+
+        // Revisions and activity IDs keep moving forward after an erase.
+        var next = reset
+        next.revision = 4
+        try await reopened.saveConfiguration(next)
+        _ = try await reopened.ingest(makeBatch(
+            captureID: "capture-after",
+            executions: [running],
+            activities: [makeActivity(captureID: "capture-after", sequence: 1, execution: running.identity,
+                                      occurredAt: baseDate.addingTimeInterval(5), revision: 4)]))
+        let after = try await reopened.page(.init(limit: 10))
+        XCTAssertGreaterThan(try XCTUnwrap(after.activities.first?.id), originalID)
+    }
+
     // MARK: - Fixtures
 
     private func makePath() throws -> String {

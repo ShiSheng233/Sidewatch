@@ -193,9 +193,6 @@ final class MainWindowController: NSWindowController, NSToolbarDelegate, NSSearc
     @objc func showLeftovers(_ sender: Any?) { viewModel.setPage(.leftovers) }
     @objc func showRules(_ sender: Any?) { viewModel.setPage(.rules) }
 
-    @objc func installExtension(_ sender: Any?) { viewModel.activateExtension() }
-    @objc func openFullDiskAccessSettings(_ sender: Any?) { viewModel.openFullDiskAccess() }
-
     @objc func newRule(_ sender: Any?) {
         viewModel.setPage(.rules)
         content.ruleEditor.presentEditor(for: nil)
@@ -203,23 +200,12 @@ final class MainWindowController: NSWindowController, NSToolbarDelegate, NSSearc
 
     @objc func clearHistory(_ sender: Any?) {
         guard let window else { return }
-        let alert = NSAlert()
-        alert.messageText = String(localized: "Clear Activity History?")
-        alert.informativeText = String(localized: "Recorded file activity and finished history are removed. Running services and the origins needed to explain them are kept, and your rules and mode don't change. This is not secure erasure.")
-        alert.addButton(withTitle: String(localized: "Clear History"))
-        alert.addButton(withTitle: String(localized: "Cancel"))
-        alert.buttons.first?.hasDestructiveAction = true
-        alert.beginSheetModal(for: window) { [weak self] response in
-            guard response == .alertFirstButtonReturn, let self else { return }
-            Task { @MainActor in
-                if let message = await self.viewModel.clearHistory() {
-                    let failure = NSAlert()
-                    failure.messageText = String(localized: "Couldn't Clear History")
-                    failure.informativeText = message
-                    failure.beginSheetModal(for: window, completionHandler: nil)
-                }
-            }
-        }
+        DataActions.confirmClearHistory(in: window, viewModel: viewModel)
+    }
+
+    @objc func eraseAllData(_ sender: Any?) {
+        guard let window else { return }
+        DataActions.confirmEraseAll(in: window, viewModel: viewModel)
     }
 
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
@@ -230,6 +216,7 @@ final class MainWindowController: NSWindowController, NSToolbarDelegate, NSSearc
         case #selector(showLeftovers(_:)): menuItem.state = viewModel.page == .leftovers ? .on : .off
         case #selector(showRules(_:)): menuItem.state = viewModel.page == .rules ? .on : .off
         case #selector(clearHistory(_:)), #selector(newRule(_:)): return viewModel.isHistoryAvailable
+        case #selector(eraseAllData(_:)): return !viewModel.isErasingData && !viewModel.isRemovingMonitor
         default: break
         }
         return true

@@ -19,6 +19,10 @@ final class MonitorService: NSObject, NSXPCListenerDelegate, @unchecked Sendable
     private var stopping = false
     private var endpoints: [String: ListeningEndpoint] = [:]
     private var nativeTask: Task<Void, Never>?
+    private var accessTask: Task<Void, Never>?
+    /// Users who erased their data before uninstalling: their store is deleted, not
+    /// persisted, when the extension stops. Kept in memory only.
+    private var removalArmed: Set<UInt32> = []
     // Assigned once during init, before any client or ES callback can run.
     private var ingestion: ActivityIngestion!
     private struct Subscriber {
@@ -61,10 +65,10 @@ final class MonitorService: NSObject, NSXPCListenerDelegate, @unchecked Sendable
             guard !lock.withLock({ stopping }) else { return }
             let result = client.start()
             guard !lock.withLock({ stopping }) else { client.stop(); return }
-            if result.availability == .active {
-                ingestion.start()
-                for uid in client.userIDs() { ingestion.graphChanged(userID: uid) }
-                startNativePolling()
+            switch result.availability {
+            case .active: beginCollection()
+            case .fullDiskAccessRequired: awaitFullDiskAccess()
+            default: break
             }
         } catch {
             lock.withLock { startupFailure = "storage_bootstrap" }
@@ -92,6 +96,13 @@ final class MonitorService: NSObject, NSXPCListenerDelegate, @unchecked Sendable
             return task
         }
         await native?.value
+        let access = lock.withLock { () -> Task<Void, Never>? in
+            let task = accessTask
+            accessTask = nil
+            task?.cancel()
+            return task
+        }
+        await access?.value
         await configurationTransactions.drain()
         client.stop()
         ingestion.stop()
@@ -99,7 +110,16 @@ final class MonitorService: NSObject, NSXPCListenerDelegate, @unchecked Sendable
         var finalCapture = capture
         finalCapture.endedAt = Date()
         let ended = finalCapture
-        for uid in client.userIDs() {
+        let removals = lock.withLock { removalArmed }
+        for uid in removals {
+            do {
+                try await registry.removeStore(for: uid)
+                Diagnostics.storage.notice("Erased store removed before uninstall")
+            } catch {
+                Diagnostics.storage.error("Erased store could not be removed; code \((error as NSError).code, privacy: .public)")
+            }
+        }
+        for uid in client.userIDs() where !removals.contains(uid) {
             do {
                 let client = self.client
                 let store = try await registry.store(for: uid)
@@ -246,6 +266,46 @@ final class MonitorService: NSObject, NSXPCListenerDelegate, @unchecked Sendable
         didCommit(userID: userID, watermark: page.watermark)
     }
 
+    /// Erase All Data: removes every recorded row for this user, resets the configuration to
+    /// the defaults (Record Only, no rules) and applies it, so no erased rule stays enforced.
+    /// Processes running now remain tracked in memory and are persisted again as observed.
+    func eraseAllData(userID: UInt32) async throws {
+        let store = try await registry.store(for: userID)
+        guard !lock.withLock({ stopping }) else { throw BrokerError.monitorInactive }
+        _ = try await configurationTransactions.run(userID: userID) { [self] in
+            let client = self.client
+            let ingestion = self.ingestion!
+            let configuration = try await ingestion.withPausedIngestion(userID: userID) { boundary in
+                let configuration = try await store.eraseAll()
+                // Drops recorded memory; executions still running and work seen since the
+                // pause began are kept, since protection and attribution depend on them.
+                client.retainGraph(GraphSnapshot(), userID: userID, since: boundary)
+                try client.apply(configuration, userID: userID)
+                ingestion.graphChanged(userID: userID)
+                return configuration
+            }
+            let live = Set(client.graph(userID: userID).executions.map(\.identity))
+            let open = lock.withLock { () -> [ListeningEndpoint] in
+                dropCounts[userID] = nil
+                storageErrors[userID] = nil
+                return endpoints.values.filter { $0.endedAt == nil && live.contains($0.execution) }
+            }
+            if !open.isEmpty { ingestion.updateEndpoints(open, userID: userID) }
+            return configuration
+        }
+        Diagnostics.lifecycle.notice("Monitor data erased")
+        let page = try await store.page(.init(limit: 1))
+        didCommit(userID: userID, watermark: page.watermark)
+    }
+
+    /// Arms (or disarms, when an uninstall is canceled) deletion of this user's store at shutdown.
+    func setRemovalArmed(_ armed: Bool, userID: UInt32) {
+        lock.withLock {
+            if armed { removalArmed.insert(userID) } else { removalArmed.remove(userID) }
+        }
+        Diagnostics.lifecycle.notice("Store removal on shutdown \(armed ? "armed" : "disarmed", privacy: .public)")
+    }
+
     /// Native socket observations enrich the ES graph without inventing launch history.
     /// Only endpoints belonging to a scoped provenance graph enter its user's history.
     func updateNativeSnapshot(executions: [ExecutionRecord], observed: [ListeningEndpoint], fullyInspected: Set<ProcessIdentity>) {
@@ -287,6 +347,34 @@ final class MonitorService: NSObject, NSXPCListenerDelegate, @unchecked Sendable
             let identities = Set(graph.executions.map(\.identity))
             let related = changes.filter { identities.contains($0.execution) }
             if !related.isEmpty { ingestion.updateEndpoints(related, userID: uid) }
+        }
+    }
+
+    private func beginCollection() {
+        ingestion.start()
+        for uid in client.userIDs() { ingestion.graphChanged(userID: uid) }
+        startNativePolling()
+    }
+
+    /// TCC is checked only when an ES client is created, and users usually grant
+    /// Full Disk Access after the extension first launches. Retry until it is granted
+    /// so collection starts without restarting the extension.
+    private func awaitFullDiskAccess() {
+        let task = Task { [weak self] in
+            while !Task.isCancelled {
+                do { try await Task.sleep(for: .seconds(2)) } catch { return }
+                guard let self, !self.lock.withLock({ self.stopping }) else { return }
+                let health = self.client.start()
+                if health.availability == .active {
+                    Diagnostics.lifecycle.notice("Full Disk Access granted; collection starting")
+                    self.beginCollection()
+                    return
+                }
+                if health.availability != .fullDiskAccessRequired { return }
+            }
+        }
+        lock.withLock {
+            if stopping { task.cancel() } else { accessTask = task }
         }
     }
 
@@ -513,6 +601,20 @@ private final class MonitorSession: NSObject, MonitorRemote, @unchecked Sendable
     func clearHistory(withReply reply: @escaping (Data) -> Void) {
         perform(reply) { service, uid in
             try await service.clearHistory(userID: uid)
+            return MonitorWire.reply(EmptyReply())
+        }
+    }
+
+    func eraseAllData(withReply reply: @escaping (Data) -> Void) {
+        perform(reply) { service, uid in
+            try await service.eraseAllData(userID: uid)
+            return MonitorWire.reply(EmptyReply())
+        }
+    }
+
+    func prepareForRemoval(_ armed: Bool, withReply reply: @escaping (Data) -> Void) {
+        perform(reply) { service, uid in
+            service.setRemovalArmed(armed, userID: uid)
             return MonitorWire.reply(EmptyReply())
         }
     }

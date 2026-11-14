@@ -123,6 +123,22 @@ final class MonitorConnection {
         _ = try decodeReply(EmptyReply.self, from: data)
     }
 
+    func eraseAllData() async throws {
+        try requireHandshake()
+        let data = try await perform { proxy, reply in
+            proxy.eraseAllData(withReply: reply)
+        }
+        _ = try decodeReply(EmptyReply.self, from: data)
+    }
+
+    func prepareForRemoval(_ armed: Bool) async throws {
+        try requireHandshake()
+        let data = try await perform { proxy, reply in
+            proxy.prepareForRemoval(armed, withReply: reply)
+        }
+        _ = try decodeReply(EmptyReply.self, from: data)
+    }
+
     // MARK: - Connection lifecycle
 
     private func performConnect() async throws {

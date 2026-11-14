@@ -9,6 +9,10 @@ import Foundation
     func liveToken(_ execution: Data, withReply reply: @escaping (Data?, Int32) -> Void)
     func recordControl(_ action: Data, withReply reply: @escaping (Data) -> Void)
     func clearHistory(withReply reply: @escaping (Data) -> Void)
+    /// Removes all of the caller's recorded data and resets its configuration to defaults.
+    func eraseAllData(withReply reply: @escaping (Data) -> Void)
+    /// When armed, the caller's store is deleted instead of saved when the extension stops.
+    func prepareForRemoval(_ armed: Bool, withReply reply: @escaping (Data) -> Void)
 }
 
 @objc protocol MonitorClient {
