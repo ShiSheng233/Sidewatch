@@ -345,7 +345,7 @@ The error exposes `errorCode: String` and localized `errorDescription`. Server c
 
 ## Wire contract
 
-`MonitorWire.version == 1`. Current identifiers are host `dev.shisheng.Sidewatch`, extension/Mach service `dev.shisheng.Sidewatch.Monitor`, and signing team `YOURTEAMID`. Both endpoints constrain the peer's code-signing identity before accepting a usable connection.
+`MonitorWire.version == 1`. Current identifiers are host `dev.shisheng.Sidewatch`, extension/Mach service `dev.shisheng.Sidewatch.Monitor`, and the signing team of the running code (`MonitorWire.teamID`, read from its own signature). Both endpoints constrain the peer's code-signing identity before accepting a usable connection.
 
 The raw `MonitorRemote` methods are handshake, snapshot, activities, configure, liveToken, recordControl, and clearHistory. Codable DTOs are JSON-encoded `Data`; ordinary replies and health notifications use `WireEnvelope<Value>` with optional `value`, `error`, and `errorCode`. `liveToken` has the separate `(Data?, Int32 errno)` reply. A failure envelope may have no value. An empty/malformed response is not success.
 

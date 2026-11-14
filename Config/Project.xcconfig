@@ -1,0 +1,5 @@
+// Base configuration for every build configuration of the project.
+// Target build settings can still override these values.
+
+#include "Version.xcconfig"
+#include "Signing.xcconfig"

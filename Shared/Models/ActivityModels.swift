@@ -1,4 +1,5 @@
 import Foundation
+import Security
 
 struct ProcessIdentity: Hashable, Codable, Sendable {
     var bootID: String
@@ -278,7 +279,22 @@ enum MonitorWire {
     static let serviceName = "dev.shisheng.Sidewatch.Monitor"
     static let extensionID = "dev.shisheng.Sidewatch.Monitor"
     static let hostID = "dev.shisheng.Sidewatch"
-    static let teamID = "YOURTEAMID"
+    /// The team that signed this process. The host and the extension accept only a peer signed
+    /// by the same team, so the identifier comes from the running code's own signature instead
+    /// of the source tree. An unsigned or ad-hoc build has no team; the requirement then matches
+    /// no certificate and every connection is refused.
+    static let teamID: String = {
+        var code: SecCode?
+        guard SecCodeCopySelf([], &code) == errSecSuccess, let code else { return "" }
+        var staticCode: SecStaticCode?
+        guard SecCodeCopyStaticCode(code, [], &staticCode) == errSecSuccess, let staticCode else { return "" }
+        var information: CFDictionary?
+        guard SecCodeCopySigningInformation(staticCode, SecCSFlags(rawValue: kSecCSSigningInformation),
+                                            &information) == errSecSuccess,
+              let values = information as? [String: Any],
+              let team = values[kSecCodeInfoTeamIdentifier as String] as? String else { return "" }
+        return team
+    }()
     static func encode<T: Codable & Sendable>(_ value: T) throws -> Data { try JSONEncoder().encode(value) }
     static func decode<T: Codable & Sendable>(_ type: T.Type, from data: Data) throws -> T { try JSONDecoder().decode(type, from: data) }
     static func reply<T: Codable & Sendable>(_ value: T) -> Data {

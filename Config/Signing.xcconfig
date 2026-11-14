@@ -1,0 +1,9 @@
+// Signing settings shared by every target and configuration.
+//
+// Your Apple Developer team ID is not committed. Copy Local.xcconfig.example to
+// Local.xcconfig in this folder and set DEVELOPMENT_TEAM there; Local.xcconfig is ignored
+// by Git. Without it, Debug builds still compile, and Xcode asks for a team when signing.
+
+DEVELOPMENT_TEAM =
+
+#include? "Local.xcconfig"

@@ -111,8 +111,22 @@ Release builds use manual signing: Developer ID Application with the Developer I
 Store notarization credentials once, then build a notarized, stapled DMG in `build/release`:
 
 ```sh
-xcrun notarytool store-credentials sidewatch-notary --apple-id <apple-id> --team-id YOURTEAMID
-Scripts/release.sh
+xcrun notarytool store-credentials sidewatch-notary --apple-id <apple-id> --team-id <team-id>
+Scripts/release.sh            # Scripts/release.sh --help lists the options
 ```
 
+The script reads your team ID from `Config/Local.xcconfig` (or `TEAM_ID`), refuses to build from uncommitted changes, checks that the app and extension carry the version from `Config/Version.xcconfig`, and prints the DMG's SHA-256.
+
 When archiving in Xcode instead, distribute with Custom → Developer ID and choose manual signing with the profiles above; Direct Distribution requests automatic signing and fails. Users must move Sidewatch to `/Applications` before macOS will activate the system extension.
+
+## Configuration
+
+Build settings shared by every target live in `Config/`:
+
+- `Version.xcconfig` holds the version (`MARKETING_VERSION`) and build number (`CURRENT_PROJECT_VERSION`) for both the app and the extension.
+- `Signing.xcconfig` includes `Local.xcconfig`, which is ignored by Git and holds your Apple Developer team ID:
+
+```sh
+cp Config/Local.xcconfig.example Config/Local.xcconfig   # then set DEVELOPMENT_TEAM
+```
+

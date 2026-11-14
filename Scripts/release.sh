@@ -1,21 +1,30 @@
 #!/bin/zsh
-# Builds a Developer ID–signed, notarized, stapled Sidewatch DMG.
+# Builds a Developer ID-signed, notarized, stapled Sidewatch DMG.
 #
-#   Scripts/release.sh
+#   Scripts/release.sh [-h]
 #
 # Environment:
+#   TEAM_ID         Apple Developer team ID (default: DEVELOPMENT_TEAM from Config/Local.xcconfig)
 #   NOTARY_PROFILE  notarytool keychain profile (default: sidewatch-notary)
-#   OUTPUT_DIR      build output directory   (default: build/release)
+#   OUTPUT_DIR      build output directory (default: build/release)
 #   SKIP_NOTARIZE=1 sign and package only; skip notarization and stapling
+#   ALLOW_DIRTY=1   build even if the working tree has uncommitted changes
+#
+# The version and build number come from Config/Version.xcconfig.
 #
 # One-time setup of the keychain profile (app-specific password from
 # account.apple.com, or use --key/--key-id/--issuer for an API key):
 #   xcrun notarytool store-credentials sidewatch-notary \
-#     --apple-id <apple-id> --team-id YOURTEAMID
+#     --apple-id <apple-id> --team-id <team-id>
 
 set -euo pipefail
+setopt extendedglob
 
-TEAM_ID=YOURTEAMID
+if [[ ${1:-} == (-h|--help) ]]; then
+  sed -n '2,/^$/s/^# \{0,1\}//p' "$0"
+  exit 0
+fi
+
 APP_NAME=Sidewatch
 APP_ID=dev.shisheng.Sidewatch
 EXT_ID=dev.shisheng.Sidewatch.Monitor
@@ -25,6 +34,7 @@ NOTARY_PROFILE=${NOTARY_PROFILE:-sidewatch-notary}
 OUTPUT_DIR=${OUTPUT_DIR:-$ROOT/build/release}
 ARCHIVE=$OUTPUT_DIR/$APP_NAME.xcarchive
 EXPORT_DIR=$OUTPUT_DIR/export
+EXPORT_OPTIONS=$OUTPUT_DIR/ExportOptions.plist
 APP=$EXPORT_DIR/$APP_NAME.app
 EXT=$APP/Contents/Library/SystemExtensions/$EXT_ID.systemextension
 
@@ -51,6 +61,25 @@ if [[ -z ${SKIP_NOTARIZE:-} ]]; then
     fail "notarytool profile '$NOTARY_PROFILE' not found; see the setup note at the top of this script"
 fi
 
+# The team ID is not committed: read it from the environment or Config/Local.xcconfig.
+xcconfig_value() {
+  awk -F= -v key="$1" '$1 ~ "^[[:space:]]*" key "[[:space:]]*$" { gsub(/[[:space:]]/, "", $2); value = $2 } END { print value }' "$2"
+}
+if [[ -z ${TEAM_ID:-} && -f $ROOT/Config/Local.xcconfig ]]; then
+  TEAM_ID=$(xcconfig_value DEVELOPMENT_TEAM "$ROOT/Config/Local.xcconfig")
+fi
+[[ ${TEAM_ID:-} == [A-Z0-9](#c10) ]] ||
+  fail "set TEAM_ID or DEVELOPMENT_TEAM in Config/Local.xcconfig (see Config/Local.xcconfig.example)"
+
+if [[ -z ${ALLOW_DIRTY:-} && -n $(git -C "$ROOT" status --porcelain 2>/dev/null) ]]; then
+  fail "the working tree has uncommitted changes; commit them or set ALLOW_DIRTY=1"
+fi
+
+VERSION=$(xcconfig_value MARKETING_VERSION "$ROOT/Config/Version.xcconfig")
+BUILD=$(xcconfig_value CURRENT_PROJECT_VERSION "$ROOT/Config/Version.xcconfig")
+[[ -n $VERSION && -n $BUILD ]] || fail "Config/Version.xcconfig must set MARKETING_VERSION and CURRENT_PROJECT_VERSION"
+print "$APP_NAME $VERSION ($BUILD), team $TEAM_ID"
+
 SIGN_ID=$(security find-identity -v -p codesigning |
   awk -v t="($TEAM_ID)" '/"Developer ID Application:/ && index($0, t) { print $2; exit }')
 [[ -n $SIGN_ID ]] || fail "no Developer ID Application identity for team $TEAM_ID in the keychain"
@@ -64,11 +93,14 @@ xcodebuild archive \
   -destination 'generic/platform=macOS' -archivePath "$ARCHIVE" \
   -derivedDataPath "$OUTPUT_DIR/DerivedData" \
   -clonedSourcePackagesDirPath "$OUTPUT_DIR/SourcePackages" \
+  DEVELOPMENT_TEAM="$TEAM_ID" \
   -quiet
 
 step "Exporting with Developer ID"
+cp "$ROOT/Scripts/ExportOptions.plist" "$EXPORT_OPTIONS"
+plutil -replace teamID -string "$TEAM_ID" "$EXPORT_OPTIONS"
 xcodebuild -exportArchive -archivePath "$ARCHIVE" -exportPath "$EXPORT_DIR" \
-  -exportOptionsPlist "$ROOT/Scripts/ExportOptions.plist" -quiet
+  -exportOptionsPlist "$EXPORT_OPTIONS" -quiet
 [[ -d $APP && -d $EXT ]] || fail "exported app or embedded system extension is missing"
 
 step "Verifying signatures"
@@ -92,10 +124,12 @@ codesign -d --entitlements - --xml "$EXT" 2>/dev/null |
 plutil -extract NSSystemExtensionUsageDescription raw "$EXT/Contents/Info.plist" >/dev/null 2>&1 ||
   fail "extension Info.plist lacks NSSystemExtensionUsageDescription"
 
-VERSION=$(defaults read "$APP/Contents/Info" CFBundleShortVersionString)
-BUILD=$(defaults read "$APP/Contents/Info" CFBundleVersion)
+for bundle in "$APP" "$EXT"; do
+  [[ $(plutil -extract CFBundleShortVersionString raw "$bundle/Contents/Info.plist") == "$VERSION" &&
+     $(plutil -extract CFBundleVersion raw "$bundle/Contents/Info.plist") == "$BUILD" ]] ||
+    fail "${bundle:t} version does not match Config/Version.xcconfig"
+done
 DMG=$OUTPUT_DIR/$APP_NAME-$VERSION.dmg
-print "$APP_NAME $VERSION ($BUILD)"
 
 if [[ -z ${SKIP_NOTARIZE:-} ]]; then
   # Notarize and staple the app itself so the copy in /Applications passes
@@ -132,3 +166,4 @@ fi
 
 step "Done"
 print "$DMG"
+print "SHA-256 $(shasum -a 256 "$DMG" | cut -d' ' -f1)"

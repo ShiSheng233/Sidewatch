@@ -1,2 +1,31 @@
+# macOS
+.DS_Store
+
+# Xcode user state
 xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+
+# Build output
 build/
+DerivedData/
+*.xcarchive
+*.xcresult
+*.dmg
+*.ipa
+*.dSYM/
+*.dSYM.zip
+
+# Swift Package Manager (Package.resolved stays tracked)
+.build/
+.swiftpm/
+
+# Local configuration: signing team and other per-developer settings
+Config/Local.xcconfig
+
+# Signing material and credentials
+*.p12
+*.cer
+*.mobileprovision
+*.provisionprofile
+.env

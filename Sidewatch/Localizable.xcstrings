@@ -95,6 +95,12 @@
     "%@ may still be using this service." : {
 
     },
+    "%@ on disk · %@ eligible" : {
+      "comment" : "Disk audit space summary"
+    },
+    "%@ on disk · nothing eligible" : {
+      "comment" : "Disk audit space summary when no file is eligible"
+    },
     "%@, %lld items" : {
       "localizations" : {
         "en" : {
@@ -176,6 +182,9 @@
     },
     "%lld days" : {
 
+    },
+    "%lld eligible" : {
+      "comment" : "Disk audit session row: number of eligible files"
     },
     "%lld endpoints" : {
       "localizations" : {
@@ -298,6 +307,32 @@
         }
       }
     },
+    "%lld files" : {
+      "comment" : "Disk audit file count",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld file"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld files"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld hours" : {
+      "comment" : "Disk audit idle timeout"
+    },
     "%lld leftover processes" : {
       "localizations" : {
         "en" : {
@@ -383,6 +418,75 @@
     "%lld running · current processes only" : {
 
     },
+    "%lld scan issues" : {
+      "comment" : "Disk audit scan issue count",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld scan issue"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld scan issues"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld scan issues. Show details." : {
+      "comment" : "Disk audit issues button accessibility label",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld scan issue. Show details."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld scan issues. Show details."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld sessions" : {
+      "comment" : "Disk audit session count",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld session"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld sessions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld still running after their agent exited" : {
       "localizations" : {
         "en" : {
@@ -404,6 +508,21 @@
           }
         }
       }
+    },
+    "1 hour" : {
+      "comment" : "Disk audit idle timeout"
+    },
+    "3 days" : {
+      "comment" : "Disk audit idle timeout"
+    },
+    "7 days" : {
+      "comment" : "Disk audit idle timeout"
+    },
+    "24 hours" : {
+      "comment" : "Disk audit idle timeout"
+    },
+    "A file becomes eligible when Sidewatch sees the agent process writing its session log exit, or when that log has had no new activity for the idle timeout. Finishing a turn doesn't end a session, and a file shared by several sessions waits for all of them.\n\nSidewatch never deletes files marked Review. Automatic cleanup checks once a minute while Sidewatch is open." : {
+      "comment" : "Disk audit cleanup help popover"
     },
     "About %@" : {
 
@@ -457,14 +576,26 @@
     "Agent" : {
 
     },
+    "Agent Disk" : {
+      "comment" : "Sidebar page"
+    },
     "Agent Exited" : {
 
+    },
+    "Agent process exited" : {
+      "comment" : "Disk audit reason"
     },
     "Agent Services" : {
 
     },
+    "Agent sessions and their temporary files" : {
+      "comment" : "Disk audit outline accessibility label"
+    },
     "Agent sessions appear here when a recognized agent CLI runs." : {
 
+    },
+    "Agent temporary files appear here after the first scan." : {
+      "comment" : "Disk audit empty state"
     },
     "Agents" : {
       "comment" : "Sidebar page"
@@ -567,6 +698,39 @@
     "Authorization response failed" : {
 
     },
+    "Automatic cleanup deleted %lld files and freed %@." : {
+      "comment" : "Disk audit automatic cleanup result",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatic cleanup deleted %#@files@ and freed %2$@."
+          },
+          "substitutions" : {
+            "files" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg file"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg files"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Available once the extension is enabled." : {
 
     },
@@ -647,6 +811,9 @@
     "Checking…" : {
 
     },
+    "Checks once a minute while Sidewatch is open and deletes files marked Eligible." : {
+      "comment" : "Disk audit automatic cleanup tooltip"
+    },
     "Choose" : {
 
     },
@@ -665,8 +832,17 @@
     "Choose…" : {
 
     },
+    "Clean eligible files automatically" : {
+      "comment" : "Disk audit policy"
+    },
+    "Clean Eligible…" : {
+      "comment" : "Disk audit command"
+    },
     "Clean Up" : {
 
+    },
+    "Cleanup is disabled while UI snapshots are being captured." : {
+      "comment" : "Disk audit cleanup suppression"
     },
     "Clear Activity History?" : {
 
@@ -722,8 +898,14 @@
     "Copy Address" : {
 
     },
+    "Copy All" : {
+      "comment" : "Disk audit issues popover: copy every issue"
+    },
     "Copy Command" : {
 
+    },
+    "Copy Log Path" : {
+      "comment" : "Disk audit context menu"
     },
     "Copy Path" : {
 
@@ -779,8 +961,67 @@
     "Delete “%@”?" : {
 
     },
+    "Delete %lld Eligible Files?" : {
+      "comment" : "Disk audit cleanup confirmation title",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %lld Eligible File?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %lld Eligible Files?"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Delete…" : {
 
+    },
+    "Deleted" : {
+      "comment" : "Disk audit item state\nDisk audit reason"
+    },
+    "Deleted %lld files and freed %@." : {
+      "comment" : "Disk audit manual cleanup result",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deleted %#@files@ and freed %2$@."
+          },
+          "substitutions" : {
+            "files" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg file"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg files"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Deleted rule" : {
 
@@ -817,6 +1058,12 @@
     },
     "Edit…" : {
 
+    },
+    "Eligible" : {
+      "comment" : "Disk audit item state"
+    },
+    "Eligible From" : {
+      "comment" : "Disk audit detail"
     },
     "Enable %@" : {
 
@@ -860,6 +1107,9 @@
     "Event queue overflow" : {
 
     },
+    "Every claiming session exited or reached the idle timeout" : {
+      "comment" : "Disk audit reason"
+    },
     "Evidence" : {
 
     },
@@ -881,8 +1131,23 @@
     "Exited" : {
       "comment" : "Agent or process state"
     },
+    "Failed" : {
+      "comment" : "Disk audit item state"
+    },
     "File" : {
       "comment" : "Rule target"
+    },
+    "File changed during cleanup" : {
+      "comment" : "Disk audit reason"
+    },
+    "File couldn't be deleted" : {
+      "comment" : "Disk audit reason"
+    },
+    "File has multiple hard links" : {
+      "comment" : "Disk audit reason"
+    },
+    "Files" : {
+      "comment" : "Disk audit session detail"
     },
     "Filter by agent session" : {
 
@@ -986,6 +1251,18 @@
     "History Unavailable" : {
 
     },
+    "How cleanup works" : {
+      "comment" : "Disk audit help button accessibility label"
+    },
+    "How long a session log can go without new activity before its files become eligible. Applies when Sidewatch hasn't seen the agent process exit." : {
+      "comment" : "Disk audit idle timeout tooltip"
+    },
+    "Idle timeout" : {
+      "comment" : "Disk audit policy"
+    },
+    "Idle timeout before automatic cleanup" : {
+      "comment" : "Disk audit idle timeout accessibility label"
+    },
     "Inactive" : {
 
     },
@@ -1010,6 +1287,12 @@
     },
     "Inferred, not directly observed" : {
 
+    },
+    "Inside a project folder" : {
+      "comment" : "Disk audit reason"
+    },
+    "Inside an agent session log folder" : {
+      "comment" : "Disk audit reason"
     },
     "Inspector" : {
 
@@ -1045,6 +1328,9 @@
     "Kind" : {
 
     },
+    "Last Activity" : {
+      "comment" : "Disk audit detail"
+    },
     "Launch Chain" : {
 
     },
@@ -1077,6 +1363,9 @@
     },
     "Location" : {
 
+    },
+    "Looking for temporary files written by agent sessions." : {
+      "comment" : "Disk audit empty state"
     },
     "Manage Monitor…" : {
 
@@ -1180,6 +1469,9 @@
     "No activity matches the current search and filters." : {
 
     },
+    "No Agent Files" : {
+      "comment" : "Disk audit empty state"
+    },
     "No agent matches “%@”." : {
 
     },
@@ -1192,6 +1484,15 @@
     "No file activity recorded." : {
 
     },
+    "No file, agent, or tool matches “%@”." : {
+      "comment" : "Disk audit empty state"
+    },
+    "No files are eligible." : {
+      "comment" : "Disk audit clean button tooltip"
+    },
+    "No files were deleted. Files that changed after you reviewed them were kept." : {
+      "comment" : "Disk audit manual cleanup result"
+    },
     "No launch history is available for this process." : {
 
     },
@@ -1203,6 +1504,9 @@
     },
     "No Matching Agents" : {
 
+    },
+    "No Matching Files" : {
+      "comment" : "Disk audit empty state"
     },
     "No Matching Ports" : {
 
@@ -1251,6 +1555,12 @@
     },
     "Not installed." : {
 
+    },
+    "Not observed" : {
+      "comment" : "Disk audit session detail: process exit not seen"
+    },
+    "Not Scanned Yet" : {
+      "comment" : "Disk audit empty state"
     },
     "Not signed for Endpoint Security." : {
 
@@ -1306,11 +1616,17 @@
     "Outcome" : {
 
     },
+    "Owned by another user" : {
+      "comment" : "Disk audit reason"
+    },
     "Paste" : {
 
     },
     "Path" : {
 
+    },
+    "Path contains a symbolic link" : {
+      "comment" : "Disk audit reason"
     },
     "Path or Command" : {
 
@@ -1326,6 +1642,9 @@
     },
     "Pending Confirmation" : {
 
+    },
+    "Permanently delete the eligible files shown in the list." : {
+      "comment" : "Disk audit clean button tooltip"
     },
     "PID" : {
 
@@ -1350,6 +1669,9 @@
     },
     "Process" : {
 
+    },
+    "Process Exit" : {
+      "comment" : "Disk audit session detail"
     },
     "Process exited" : {
       "comment" : "Agent session end reason"
@@ -1404,6 +1726,9 @@
     },
     "Protocol" : {
 
+    },
+    "Provenance" : {
+      "comment" : "Disk audit detail section"
     },
     "Python" : {
       "comment" : "Runtime"
@@ -1519,6 +1844,12 @@
     "Reveal Project in Finder" : {
 
     },
+    "Review" : {
+      "comment" : "Disk audit item state"
+    },
+    "Review required" : {
+      "comment" : "Disk audit reason fallback"
+    },
     "Revision %lld is waiting for the monitor to confirm it. It isn't active yet." : {
 
     },
@@ -1561,6 +1892,18 @@
     "Save" : {
 
     },
+    "Scan" : {
+      "comment" : "Disk audit command"
+    },
+    "Scan Issues" : {
+      "comment" : "Disk audit issues popover title"
+    },
+    "Scanned %@" : {
+      "comment" : "Disk audit status"
+    },
+    "Scanning…" : {
+      "comment" : "Disk audit status"
+    },
     "Search" : {
 
     },
@@ -1576,6 +1919,9 @@
     "Select a rule to see its matches and blocked operations." : {
 
     },
+    "Select a session or file to see where it came from and when it can be deleted." : {
+      "comment" : "Disk audit detail placeholder"
+    },
     "Select All" : {
 
     },
@@ -1588,11 +1934,47 @@
     "Select at least one operation to protect." : {
 
     },
+    "Selected file details" : {
+      "comment" : "Disk audit detail accessibility label"
+    },
     "Services" : {
 
     },
     "Services Left Running" : {
 
+    },
+    "Session / File" : {
+      "comment" : "Disk audit outline column"
+    },
+    "Session %@" : {
+      "comment" : "Disk audit session title when the project is unknown: short session ID"
+    },
+    "Session %@, %@" : {
+      "comment" : "Disk audit session row accessibility label: title, agent"
+    },
+    "Session ended or timed out; waiting a few minutes" : {
+      "comment" : "Disk audit reason"
+    },
+    "Session hasn't ended or reached the idle timeout" : {
+      "comment" : "Disk audit reason"
+    },
+    "Session ID" : {
+      "comment" : "Disk audit session detail"
+    },
+    "Session Log" : {
+      "comment" : "Disk audit provenance"
+    },
+    "Session log may be incomplete" : {
+      "comment" : "Disk audit reason"
+    },
+    "Session reached the idle timeout" : {
+      "comment" : "Disk audit reason"
+    },
+    "Session's project folder is unknown" : {
+      "comment" : "Disk audit reason"
+    },
+    "Sessions" : {
+      "comment" : "Disk audit detail"
     },
     "Settings…" : {
 
@@ -1612,6 +1994,12 @@
     "Shortcuts" : {
 
     },
+    "Show" : {
+      "comment" : "Disk audit provenance button: show the path in Finder"
+    },
+    "Show %@ in Finder: %@" : {
+      "comment" : "Disk audit provenance button accessibility label: row title, file name"
+    },
     "Show Activity from Same Process" : {
 
     },
@@ -1621,8 +2009,14 @@
     "Show Git Diff" : {
 
     },
+    "Show in Finder" : {
+      "comment" : "Disk audit action"
+    },
     "Show in Timeline" : {
 
+    },
+    "Show Session Log in Finder" : {
+      "comment" : "Disk audit context menu"
     },
     "Show the number of leftover processes on the Sidewatch icon." : {
 
@@ -1633,8 +2027,17 @@
     "Sidewatch" : {
 
     },
+    "Sidewatch doesn't delete folders" : {
+      "comment" : "Disk audit reason"
+    },
+    "Sidewatch found no temporary files written by agent sessions." : {
+      "comment" : "Disk audit empty state"
+    },
     "Sidewatch immediately ends this exact process (SIGKILL). Unsaved work in that process will be lost." : {
 
+    },
+    "Sidewatch rescans first, then deletes only these files and only if they haven't changed. This frees %@ and can't be undone." : {
+      "comment" : "Disk audit cleanup confirmation"
     },
     "Sidewatch sends a termination request (SIGTERM) to this exact process only. It may take time to exit or may ignore the request." : {
 
@@ -1642,8 +2045,14 @@
     "Sidewatch shows current processes and ports. Install the monitor to record agent history and enforce protection rules." : {
 
     },
+    "Sidewatch won't delete this file. Clean Eligible and automatic cleanup both skip it." : {
+      "comment" : "Disk audit detail note for review-only files"
+    },
     "Signing ID" : {
 
+    },
+    "Size" : {
+      "comment" : "Disk audit table column"
     },
     "Size on disk" : {
 
@@ -1722,6 +2131,9 @@
     },
     "The activity history changed. Reload the history and try again." : {
 
+    },
+    "The agent edited this file but may not have created it" : {
+      "comment" : "Disk audit reason"
     },
     "The diff is too large and was truncated." : {
 
@@ -1876,6 +2288,9 @@
     "Timeline" : {
       "comment" : "Sidebar page"
     },
+    "Timestamps don't match the agent's recorded writes" : {
+      "comment" : "Disk audit reason"
+    },
     "To" : {
 
     },
@@ -1884,6 +2299,9 @@
     },
     "Toggle Sidebar" : {
 
+    },
+    "Tools" : {
+      "comment" : "Disk audit detail"
     },
     "Try Again" : {
 
@@ -1933,8 +2351,14 @@
     "Unknown process" : {
 
     },
+    "Unknown Session" : {
+      "comment" : "Disk audit session title fallback"
+    },
     "Unknown while the monitor can't start collection." : {
 
+    },
+    "Unsupported file type" : {
+      "comment" : "Disk audit reason"
     },
     "Update" : {
 
@@ -1964,6 +2388,9 @@
     },
     "View" : {
 
+    },
+    "Waiting" : {
+      "comment" : "Disk audit item state"
     },
     "Waiting for Full Disk Access." : {
 
@@ -2006,433 +2433,6 @@
     },
     "Zoom" : {
 
-    },
-    "1 hour" : {
-      "comment" : "Disk audit idle timeout"
-    },
-    "24 hours" : {
-      "comment" : "Disk audit idle timeout"
-    },
-    "3 days" : {
-      "comment" : "Disk audit idle timeout"
-    },
-    "7 days" : {
-      "comment" : "Disk audit idle timeout"
-    },
-    "%lld hours" : {
-      "comment" : "Disk audit idle timeout"
-    },
-    "%lld files" : {
-      "comment" : "Disk audit file count",
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld file"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld files"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "%lld scan issues" : {
-      "comment" : "Disk audit scan issue count",
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld scan issue"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld scan issues"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "%lld sessions" : {
-      "comment" : "Disk audit session count",
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld session"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld sessions"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "Agent Disk" : {
-      "comment" : "Sidebar page"
-    },
-    "Agent temporary files appear here after the first scan." : {
-      "comment" : "Disk audit empty state"
-    },
-    "Clean Eligible…" : {
-      "comment" : "Disk audit command"
-    },
-    "Clean eligible files automatically" : {
-      "comment" : "Disk audit policy"
-    },
-    "Cleanup is disabled while UI snapshots are being captured." : {
-      "comment" : "Disk audit cleanup suppression"
-    },
-    "Eligible" : {
-      "comment" : "Disk audit item state"
-    },
-    "Failed" : {
-      "comment" : "Disk audit item state"
-    },
-    "File changed during cleanup" : {
-      "comment" : "Disk audit reason"
-    },
-    "File has multiple hard links" : {
-      "comment" : "Disk audit reason"
-    },
-    "Idle timeout" : {
-      "comment" : "Disk audit policy"
-    },
-    "Idle timeout before automatic cleanup" : {
-      "comment" : "Disk audit idle timeout accessibility label"
-    },
-    "Inside a project folder" : {
-      "comment" : "Disk audit reason"
-    },
-    "Last Activity" : {
-      "comment" : "Disk audit detail"
-    },
-    "No Agent Files" : {
-      "comment" : "Disk audit empty state"
-    },
-    "No Matching Files" : {
-      "comment" : "Disk audit empty state"
-    },
-    "No file, agent, or tool matches “%@”." : {
-      "comment" : "Disk audit empty state"
-    },
-    "Not Scanned Yet" : {
-      "comment" : "Disk audit empty state"
-    },
-    "Owned by another user" : {
-      "comment" : "Disk audit reason"
-    },
-    "Provenance" : {
-      "comment" : "Disk audit detail section"
-    },
-    "Review" : {
-      "comment" : "Disk audit item state"
-    },
-    "Review required" : {
-      "comment" : "Disk audit reason fallback"
-    },
-    "Scan" : {
-      "comment" : "Disk audit command"
-    },
-    "Scanned %@" : {
-      "comment" : "Disk audit status"
-    },
-    "Scanning…" : {
-      "comment" : "Disk audit status"
-    },
-    "Selected file details" : {
-      "comment" : "Disk audit detail accessibility label"
-    },
-    "Session Log" : {
-      "comment" : "Disk audit provenance"
-    },
-    "Session log may be incomplete" : {
-      "comment" : "Disk audit reason"
-    },
-    "Sessions" : {
-      "comment" : "Disk audit detail"
-    },
-    "Size" : {
-      "comment" : "Disk audit table column"
-    },
-    "Tools" : {
-      "comment" : "Disk audit detail"
-    },
-    "Unsupported file type" : {
-      "comment" : "Disk audit reason"
-    },
-    "Waiting" : {
-      "comment" : "Disk audit item state"
-    },
-    "%@ on disk · %@ eligible" : {
-      "comment" : "Disk audit space summary"
-    },
-    "A file becomes eligible when Sidewatch sees the agent process writing its session log exit, or when that log has had no new activity for the idle timeout. Finishing a turn doesn't end a session, and a file shared by several sessions waits for all of them.\n\nSidewatch never deletes files marked Review. Automatic cleanup checks once a minute while Sidewatch is open." : {
-      "comment" : "Disk audit cleanup help popover"
-    },
-    "Agent process exited" : {
-      "comment" : "Disk audit reason"
-    },
-    "Automatic cleanup deleted %lld files and freed %@." : {
-      "comment" : "Disk audit automatic cleanup result",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Automatic cleanup deleted %#@files@ and freed %2$@."
-          },
-          "substitutions" : {
-            "files" : {
-              "argNum" : 1,
-              "formatSpecifier" : "lld",
-              "variations" : {
-                "plural" : {
-                  "one" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg file"
-                    }
-                  },
-                  "other" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg files"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "Checks once a minute while Sidewatch is open and deletes files marked Eligible." : {
-      "comment" : "Disk audit automatic cleanup tooltip"
-    },
-    "Delete %lld Eligible Files?" : {
-      "comment" : "Disk audit cleanup confirmation title",
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Delete %lld Eligible File?"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Delete %lld Eligible Files?"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "Deleted" : {
-      "comment" : "Disk audit item state and reason"
-    },
-    "Deleted %lld files and freed %@." : {
-      "comment" : "Disk audit manual cleanup result",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Deleted %#@files@ and freed %2$@."
-          },
-          "substitutions" : {
-            "files" : {
-              "argNum" : 1,
-              "formatSpecifier" : "lld",
-              "variations" : {
-                "plural" : {
-                  "one" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg file"
-                    }
-                  },
-                  "other" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg files"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "Eligible From" : {
-      "comment" : "Disk audit detail"
-    },
-    "Every claiming session exited or reached the idle timeout" : {
-      "comment" : "Disk audit reason"
-    },
-    "File couldn't be deleted" : {
-      "comment" : "Disk audit reason"
-    },
-    "How cleanup works" : {
-      "comment" : "Disk audit help button accessibility label"
-    },
-    "How long a session log can go without new activity before its files become eligible. Applies when Sidewatch hasn't seen the agent process exit." : {
-      "comment" : "Disk audit idle timeout tooltip"
-    },
-    "Looking for temporary files written by agent sessions." : {
-      "comment" : "Disk audit empty state"
-    },
-    "No files are eligible." : {
-      "comment" : "Disk audit clean button tooltip"
-    },
-    "No files were deleted. Files that changed after you reviewed them were kept." : {
-      "comment" : "Disk audit manual cleanup result"
-    },
-    "Path contains a symbolic link" : {
-      "comment" : "Disk audit reason"
-    },
-    "Permanently delete the eligible files shown in the list." : {
-      "comment" : "Disk audit clean button tooltip"
-    },
-    "Session ended or timed out; waiting a few minutes" : {
-      "comment" : "Disk audit reason"
-    },
-    "Session hasn't ended or reached the idle timeout" : {
-      "comment" : "Disk audit reason"
-    },
-    "Session reached the idle timeout" : {
-      "comment" : "Disk audit reason"
-    },
-    "Session's project folder is unknown" : {
-      "comment" : "Disk audit reason"
-    },
-    "Show" : {
-      "comment" : "Disk audit provenance button: show the path in Finder"
-    },
-    "Show %@ in Finder: %@" : {
-      "comment" : "Disk audit provenance button accessibility label: row title, file name"
-    },
-    "Show Session Log in Finder" : {
-      "comment" : "Disk audit context menu"
-    },
-    "Show in Finder" : {
-      "comment" : "Disk audit action"
-    },
-    "Sidewatch doesn't delete folders" : {
-      "comment" : "Disk audit reason"
-    },
-    "Sidewatch found no temporary files written by agent sessions." : {
-      "comment" : "Disk audit empty state"
-    },
-    "Sidewatch rescans first, then deletes only these files and only if they haven't changed. This frees %@ and can't be undone." : {
-      "comment" : "Disk audit cleanup confirmation"
-    },
-    "Sidewatch won't delete this file. Clean Eligible and automatic cleanup both skip it." : {
-      "comment" : "Disk audit detail note for review-only files"
-    },
-    "The agent edited this file but may not have created it" : {
-      "comment" : "Disk audit reason"
-    },
-    "Timestamps don't match the agent's recorded writes" : {
-      "comment" : "Disk audit reason"
-    },
-    "%@ on disk · nothing eligible" : {
-      "comment" : "Disk audit space summary when no file is eligible"
-    },
-    "Scan Issues" : {
-      "comment" : "Disk audit issues popover title"
-    },
-    "Copy All" : {
-      "comment" : "Disk audit issues popover: copy every issue"
-    },
-    "%lld scan issues. Show details." : {
-      "comment" : "Disk audit issues button accessibility label",
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld scan issue. Show details."
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld scan issues. Show details."
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "Inside an agent session log folder" : {
-      "comment" : "Disk audit reason"
-    },
-    "%lld eligible" : {
-      "comment" : "Disk audit session row: number of eligible files"
-    },
-    "Agent sessions and their temporary files" : {
-      "comment" : "Disk audit outline accessibility label"
-    },
-    "Copy Log Path" : {
-      "comment" : "Disk audit context menu"
-    },
-    "Files" : {
-      "comment" : "Disk audit session detail"
-    },
-    "Not observed" : {
-      "comment" : "Disk audit session detail: process exit not seen"
-    },
-    "Process Exit" : {
-      "comment" : "Disk audit session detail"
-    },
-    "Select a session or file to see where it came from and when it can be deleted." : {
-      "comment" : "Disk audit detail placeholder"
-    },
-    "Session %@" : {
-      "comment" : "Disk audit session title when the project is unknown: short session ID"
-    },
-    "Session %@, %@" : {
-      "comment" : "Disk audit session row accessibility label: title, agent"
-    },
-    "Session / File" : {
-      "comment" : "Disk audit outline column"
-    },
-    "Session ID" : {
-      "comment" : "Disk audit session detail"
-    },
-    "Unknown Session" : {
-      "comment" : "Disk audit session title fallback"
     }
   },
   "version" : "1.0"
