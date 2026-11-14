@@ -45,6 +45,7 @@
       ],
     },
     { "kind": "folder", "path": "Sidewatch/Services", "target-membership": [ "SidewatchTests" ] },
+    { "kind": "folder", "path": "Sidewatch/ViewModels", "target-membership": [ "SidewatchTests" ] },
     { "path": "Sidewatch/Services/ProcessSnapshotService.swift", "target-membership": [ "SidewatchMonitor/compile-sources" ] },
     { "kind": "folder", "path": "SidewatchTests", "target-membership": [ "SidewatchTests" ] },
     {
