@@ -191,7 +191,14 @@ final class MonitorService: NSObject, NSXPCListenerDelegate, @unchecked Sendable
                 reused.fileIdentity = previous.fileIdentity
                 return reused
             }
-            return try RuleMatcher.prepare(rule)
+            do {
+                return try RuleMatcher.prepare(rule)
+            } catch ProtectionRulePreparationError.targetTypeMismatch {
+                throw BrokerError.ruleTargetMismatch
+            } catch {
+                // Missing, unreadable, or empty paths cannot be prepared; this is not a storage failure.
+                throw BrokerError.rulePathUnavailable
+            }
         }
         try await store.saveConfiguration(prepared)
         try client.apply(prepared, userID: userID)
@@ -363,7 +370,7 @@ final class MonitorService: NSObject, NSXPCListenerDelegate, @unchecked Sendable
     }
 
     private func didCommit(userID: UInt32, watermark: Int64) {
-        lock.withLock { storageErrors.removeValue(forKey: userID) }
+        _ = lock.withLock { storageErrors.removeValue(forKey: userID) }
         Task { [weak self] in
             guard let self else { return }
             do {
@@ -420,7 +427,7 @@ final class MonitorService: NSObject, NSXPCListenerDelegate, @unchecked Sendable
 }
 
 private enum BrokerError: Error {
-    case monitorInactive, configurationConflict, configurationNotApplied, unknownExecution, permissionDenied, invalidConfiguration, invalidRequest
+    case monitorInactive, configurationConflict, configurationNotApplied, unknownExecution, permissionDenied, invalidConfiguration, invalidRequest, rulePathUnavailable, ruleTargetMismatch
     var code: String {
         switch self {
         case .monitorInactive: "monitor_inactive"
@@ -430,6 +437,8 @@ private enum BrokerError: Error {
         case .permissionDenied: "permission_denied"
         case .invalidConfiguration: "invalid_configuration"
         case .invalidRequest: "invalid_request"
+        case .rulePathUnavailable: "rule_path_unavailable"
+        case .ruleTargetMismatch: "rule_target_mismatch"
         }
     }
 }

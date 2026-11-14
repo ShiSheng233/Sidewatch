@@ -93,7 +93,7 @@ final class MonitorConnection {
         try requireHandshake()
         let payload = try encode(identity)
         let result = try await perform { proxy, reply in
-            proxy.liveToken(payload, withReply: { token, code in
+            proxy.liveToken(payload, withReply: { @Sendable token, code in
                 reply(TokenReply(token: token, errno: code))
             })
         }
@@ -160,12 +160,13 @@ final class MonitorConnection {
         connection.exportedObject = adapter
         self.connection = connection
 
-        connection.interruptionHandler = { [weak self] in
+        // XPC invokes these on its own queue; they must not inherit main-actor isolation.
+        connection.interruptionHandler = { @Sendable [weak self] in
             Task { @MainActor in
                 self?.handleConnectionLoss(generation: currentGeneration, invalidate: true)
             }
         }
-        connection.invalidationHandler = { [weak self] in
+        connection.invalidationHandler = { @Sendable [weak self] in
             Task { @MainActor in
                 self?.handleConnectionLoss(generation: currentGeneration, invalidate: false)
             }
@@ -320,7 +321,8 @@ final class MonitorConnection {
                     return
                 }
 
-                let proxy = connection.remoteObjectProxyWithErrorHandler { error in
+                // Called on an XPC queue: explicitly nonisolated so no main-actor assertion fires there.
+                let proxy = connection.remoteObjectProxyWithErrorHandler { @Sendable error in
                     let code = Int32(clamping: (error as NSError).code)
                     reply.fail(.serviceUnavailable(code))
                     pendingRegistry.remove(token)
@@ -528,11 +530,11 @@ enum MonitorConnectionError: Error, LocalizedError, Sendable, Equatable {
             if code == 0 {
                 return String(localized: "The process is no longer running.")
             }
-            return String(localized: "The process is no longer running (error \(Int(code))).")
+            return String(localized: "The monitor couldn't verify this process (error \(Int(code))).")
         case .malformedToken:
             return String(localized: "The monitor service returned an invalid process token.")
         case .cancelled:
-            return String(localized: "The monitor request was cancelled.")
+            return String(localized: "The monitor request was canceled.")
         }
     }
 }
