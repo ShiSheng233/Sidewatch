@@ -1,0 +1,939 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%@ (Change Pending)": {},
+    "%@ (PID %lld)": {},
+    "%@ (PID %lld) — %@": {},
+    "%@ exited, but %lld related processes are still running.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ exited, but %#@processes@ still running."
+          },
+          "substitutions": {
+            "processes": {
+              "argNum": 2,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg related process is"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg related processes are"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@ is active at revision %lld, confirmed by the monitor.": {},
+    "%@ may still be using this service.": {},
+    "%@ · %lld of %lld rules on": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ · %2$lld of %#@rules@ on"
+          },
+          "substitutions": {
+            "rules": {
+              "argNum": 3,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg rule"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg rules"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@ — %@ — %@": {},
+    "%@ → %@": {},
+    "%@, %lld items": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %#@items@"
+          },
+          "substitutions": {
+            "items": {
+              "argNum": 2,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg item"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg items"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@, agent %@": {},
+    "%lld agents": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld agent"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld agents"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld collection gaps recorded. History may be incomplete around those times.": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld collection gap recorded. History may be incomplete around that time."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld collection gaps recorded. History may be incomplete around those times."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld endpoints": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld endpoint"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld endpoints"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld endpoints on %lld ports": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%#@endpoints@ on %#@ports@"
+          },
+          "substitutions": {
+            "endpoints": {
+              "argNum": 1,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg endpoint"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg endpoints"
+                    }
+                  }
+                }
+              }
+            },
+            "ports": {
+              "argNum": 2,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg port"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg ports"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld events loaded": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld event loaded"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld events loaded"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld events were dropped. History is incomplete for those periods.": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld event was dropped. History is incomplete for that period."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld events were dropped. History is incomplete for those periods."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld leftover processes": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld leftover process"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld leftover processes"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld processes are still running after their agent exited.": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld process is still running after its agent exited."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld processes are still running after their agent exited."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld related, %lld running": {},
+    "%lld running": {},
+    "%lld running · %lld sessions": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld running · %#@sessions@"
+          },
+          "substitutions": {
+            "sessions": {
+              "argNum": 2,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg session"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg sessions"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld running · current processes only": {},
+    "%lld still running after their agent exited": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld still running after its agent exited"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld still running after their agent exited"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    ".NET": {
+      "comment": "Runtime"
+    },
+    "/Users/you/Projects/app/.env": {},
+    "About %@": {},
+    "Active mode: %@. Collecting activity.": {},
+    "Active · Revision %lld": {},
+    "Activity from the Same Process": {},
+    "Activity history requires the monitor extension.": {},
+    "Activity is kept for %lld days.": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Activity is kept for %lld day."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Activity is kept for %lld days."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Address": {},
+    "Administrator authorization is required to install the monitor extension.": {},
+    "Agent": {},
+    "Agent Exited": {},
+    "Agent Services": {},
+    "Agent sessions appear here when a recognized agent CLI runs.": {},
+    "Agents": {
+      "comment": "Sidebar page"
+    },
+    "Agents will be denied supported operations on files and folders matched by your %lld enabled rules. Try Dry Run first to see what would be blocked.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agents will be denied supported operations on files and folders matched by your %#@rules@. Try Dry Run first to see what would be blocked."
+          },
+          "substitutions": {
+            "rules": {
+              "argNum": 1,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg enabled rule"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg enabled rules"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "All Activity Loaded": {},
+    "All Agents": {},
+    "All Events": {},
+    "All Outcomes": {},
+    "All Projects": {},
+    "All Services": {},
+    "All agents": {},
+    "All recognized agents": {},
+    "Allowed": {
+      "comment": "Actual system response"
+    },
+    "Applies to:": {},
+    "Approval needed": {},
+    "Approve the Sidewatch monitor extension in System Settings. History and protection are inactive until it's approved.": {},
+    "Attribution": {},
+    "Authorization": {
+      "comment": "Activity kind"
+    },
+    "Authorization deadline exceeded": {},
+    "Authorization response failed": {},
+    "Blocked": {
+      "comment": "Actual system response"
+    },
+    "Bound socket (may not be a server)": {},
+    "Bring All to Front": {},
+    "Bun": {
+      "comment": "Runtime"
+    },
+    "Can't connect to the monitor service: %@": {},
+    "Cancel": {},
+    "Change pending · %lld of %lld rules on": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change pending · %1$lld of %#@rules@ on"
+          },
+          "substitutions": {
+            "rules": {
+              "argNum": 2,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg rule"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg rules"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Changes Since Last Commit": {},
+    "Chat titles and task contents aren't available from system events.": {},
+    "Choose": {},
+    "Choose a file or folder with a full path.": {},
+    "Choose a file to protect.": {},
+    "Choose a folder to protect.": {},
+    "Choose…": {},
+    "Clear Activity History?": {},
+    "Clear Filters": {},
+    "Clear History": {},
+    "Clear History…": {},
+    "Clearing history keeps running services, their origins, and your rules.": {},
+    "Close Window": {},
+    "Collection Gap": {
+      "comment": "Activity kind"
+    },
+    "Collection interrupted": {},
+    "Command": {},
+    "Connect the monitor extension to choose a mode. Without it, no rule is evaluated or enforced.": {},
+    "Connect to the monitor service to change protection settings.": {},
+    "Connecting…": {},
+    "Copy": {},
+    "Copy Address": {},
+    "Copy Command": {},
+    "Copy Path": {},
+    "Copy Project Path": {},
+    "Couldn't Clear History": {},
+    "Couldn't Force Quit “%@”": {},
+    "Couldn't Load Activity": {},
+    "Couldn't Stop “%@”": {},
+    "Couldn't load monitor data: %@": {},
+    "Couldn't read the current process list (error %lld): %@": {},
+    "Create": {
+      "comment": "Activity kind"
+    },
+    "Create a rule to keep agents from opening, deleting, renaming, or moving important files and folders.": {},
+    "Current process scan": {},
+    "Current working copy compared with HEAD in %@. This may include edits by other tools or people and doesn't show which agent changed each line.": {},
+    "Cut": {},
+    "Delete": {
+      "comment": "Activity kind (unlink) / Protected operation"
+    },
+    "Delete “%@”?": {},
+    "Deleted rule": {},
+    "Delete…": {},
+    "Denies supported operations (open, delete, rename) that match enabled rules.": {},
+    "Deno": {
+      "comment": "Runtime"
+    },
+    "Details": {},
+    "Disabled": {},
+    "Dry Run": {
+      "comment": "Monitoring mode"
+    },
+    "Duration": {},
+    "Edit": {},
+    "Edit Rule": {},
+    "Edit…": {},
+    "Enable %@": {},
+    "Enabled": {},
+    "End Reason": {},
+    "Ended": {
+      "comment": "Agent session end reason"
+    },
+    "Endpoint": {},
+    "Enter Full Screen": {},
+    "Enter a name for the rule.": {},
+    "Evaluates enabled rules and records Would Block, but allows every operation.": {},
+    "Event": {},
+    "Event queue overflow": {},
+    "Evidence": {},
+    "Exec": {
+      "comment": "Activity kind"
+    },
+    "Executable": {},
+    "Exit": {
+      "comment": "Activity kind"
+    },
+    "Exited": {
+      "comment": "Agent or process state"
+    },
+    "File": {
+      "comment": "Rule target"
+    },
+    "Filter by agent session": {},
+    "Filter by event type": {},
+    "Filter by outcome": {},
+    "Filter by project": {},
+    "Find…": {},
+    "First Seen": {},
+    "Folder": {
+      "comment": "Rule target"
+    },
+    "Folder rules include everything inside the folder, but not folders with similar names. Unrecognized processes never match.": {},
+    "For example, Production secrets": {},
+    "Force Quit": {},
+    "Force Quit signal sent.": {},
+    "Force Quit “%@” (PID %lld)?": {},
+    "Force Quit…": {},
+    "Fork": {
+      "comment": "Activity kind"
+    },
+    "Found in the current process list. Without monitor history, its launch chain and file activity are unknown.": {},
+    "From": {},
+    "Git couldn't produce a diff (status %lld).": {},
+    "Git diff": {},
+    "Git isn't available. Install the Command Line Tools to view diffs.": {},
+    "Grant Full Disk Access to the Sidewatch monitor so it can collect activity.": {},
+    "HISTORY": {},
+    "Help": {},
+    "Hide %@": {},
+    "Hide Others": {},
+    "History Unavailable": {},
+    "History is stored by the monitor extension and isn't available while it's disconnected.": {},
+    "History off": {},
+    "History storage is unavailable. New activity may not be saved.": {},
+    "Inactive": {},
+    "Inactive while the monitor is off": {},
+    "Inferred": {
+      "comment": "Attribution evidence"
+    },
+    "Inferred, not directly observed": {},
+    "Inspector": {},
+    "Install Monitor Extension…": {},
+    "Install…": {},
+    "Java": {
+      "comment": "Runtime"
+    },
+    "Kind": {},
+    "Launch Chain": {},
+    "Leftover Services": {
+      "comment": "Sidebar page"
+    },
+    "Leftover services are identified from recorded agent exits, which requires the monitor extension.": {},
+    "Listening": {},
+    "Listening socket": {},
+    "Load Older Activity": {},
+    "Loading…": {},
+    "MODE": {},
+    "Match history requires the monitor connection.": {},
+    "Matched Rules": {},
+    "Minimize": {},
+    "Missed events": {},
+    "Mode": {},
+    "Mode Change": {
+      "comment": "Activity kind"
+    },
+    "Mode Pending": {},
+    "Monitor Off": {},
+    "Monitor extension not installed": {},
+    "Monitor extension unavailable": {},
+    "Monitor observation": {},
+    "Monitoring unavailable": {},
+    "More than one agent is related to this process. Sidewatch shows known relationships but can't detect every consumer of a service.": {},
+    "Move Sidewatch to the Applications folder to install the monitor extension.": {},
+    "Name": {},
+    "Name:": {},
+    "Needs Approval": {},
+    "Needs monitor history": {},
+    "New Protection Rule…": {},
+    "New Rule": {},
+    "New Rule…": {},
+    "No Activity": {},
+    "No Agents": {},
+    "No Leftover Services": {},
+    "No Listening Ports": {},
+    "No Matching Agents": {},
+    "No Matching Ports": {},
+    "No Matching Services": {},
+    "No Protection Rules": {},
+    "No Rule Selected": {},
+    "No Running Agents": {},
+    "No Selection": {},
+    "No TCP listeners or UDP bindings were found for processes you can inspect.": {},
+    "No activity matches the current search and filters.": {},
+    "No agent matches “%@”.": {},
+    "No differences from the last commit.": {},
+    "No file activity recorded.": {},
+    "No launch history is available for this process.": {},
+    "No port, command, or project matches “%@”.": {},
+    "No recent matches among the latest authorization events.": {},
+    "No recognized agent is running. Agent history requires the monitor extension.": {},
+    "Node.js": {
+      "comment": "Runtime"
+    },
+    "None recorded": {},
+    "Not connected to the monitor. This rule isn't being evaluated.": {},
+    "Observed": {
+      "comment": "Attribution evidence"
+    },
+    "Oldest activity: %@.": {},
+    "On": {},
+    "Open": {
+      "comment": "Activity kind / Protected operation"
+    },
+    "Open Full Disk Access": {},
+    "Open Full Disk Access Settings…": {},
+    "Open System Settings": {},
+    "Operations": {},
+    "Origin": {},
+    "Outcome": {},
+    "PID": {},
+    "PID %@": {},
+    "Paste": {},
+    "Path": {},
+    "Path or Command": {},
+    "Path too long to record": {},
+    "Path:": {},
+    "Pending Confirmation": {},
+    "Pending · Active Revision %lld": {},
+    "Port": {},
+    "Ports": {},
+    "Ports & Services": {
+      "comment": "Sidebar page"
+    },
+    "Prevent:": {},
+    "Process": {},
+    "Process exited": {
+      "comment": "Agent session end reason"
+    },
+    "Processes": {},
+    "Processes still running after their agent exited appear here. Unknown origins and missed exits aren't listed.": {},
+    "Project": {},
+    "Project Path": {},
+    "Protect": {
+      "comment": "Monitoring mode"
+    },
+    "Protect a:": {},
+    "Protected path": {},
+    "Protection Rules": {
+      "comment": "Sidebar page"
+    },
+    "Protection mode": {},
+    "Protection mode confirmed by the monitor": {},
+    "Protection rules": {},
+    "Protection rules are stored and enforced by the monitor extension.": {},
+    "Protection settings changed elsewhere. The latest settings were reloaded; try again.": {},
+    "Protection status: %@": {},
+    "Protection status: %@. History and protection are inactive until the monitor is connected.": {},
+    "Protocol": {},
+    "Python": {
+      "comment": "Runtime"
+    },
+    "Quit %@": {},
+    "Reason": {},
+    "Recent Matches": {},
+    "Reconnect": {},
+    "Record Only": {
+      "comment": "Monitoring mode"
+    },
+    "Recorded": {
+      "comment": "Activity without an authorization decision"
+    },
+    "Recorded agent activity appears here.": {},
+    "Recorded file activity and finished history are removed. Running services and the origins needed to explain them are kept, and your rules and mode don't change. This is not secure erasure.": {},
+    "Records process and file activity. Rules aren't evaluated and nothing is blocked.": {},
+    "Redo": {},
+    "Refresh": {},
+    "Refresh processes, ports, and history": {},
+    "Related Activity": {},
+    "Rename": {
+      "comment": "Activity kind"
+    },
+    "Rename or Move": {
+      "comment": "Protected operation"
+    },
+    "Replaced by another program": {
+      "comment": "Agent session end reason"
+    },
+    "Response Failed": {
+      "comment": "Actual system response"
+    },
+    "Responsible process": {
+      "comment": "Attribution evidence"
+    },
+    "Responsible process (supplementary evidence): %@": {},
+    "Restart required": {},
+    "Restart your Mac to finish installing the Sidewatch monitor extension.": {},
+    "Reveal Project": {},
+    "Reveal Project in Finder": {},
+    "Reveal in Finder": {},
+    "Revision %lld is waiting for the monitor to confirm it. It isn't active yet.": {},
+    "Ruby": {
+      "comment": "Runtime"
+    },
+    "Rule Revision": {},
+    "Rule name": {},
+    "Rule target type": {},
+    "Rules Unavailable": {},
+    "Rules can prevent opening, deleting, and renaming or moving matched items. Creating and writing files is recorded but can't be blocked. Rules apply only to recognized agents and the processes they start.": {},
+    "Rules inactive: the monitor isn't connected.": {},
+    "Running": {
+      "comment": "Agent or process state"
+    },
+    "Running Since Exit": {},
+    "Runtime": {},
+    "Same Process": {},
+    "Save": {},
+    "Search": {},
+    "Search by port number, command, project path, or file path": {},
+    "Search ports, commands, project paths, and file paths": {},
+    "Sections": {},
+    "Select All": {},
+    "Select a rule to see its matches and blocked operations.": {},
+    "Select an agent, event, port, or service to see where it came from.": {},
+    "Select at least one agent, or choose all recognized agents.": {},
+    "Select at least one operation to protect.": {},
+    "Services": {},
+    "Services Left Running": {},
+    "Shared": {},
+    "Shared by more than one agent": {},
+    "Shared, uncertain": {},
+    "Shared: this process is related to more than one agent session. Check that no one still needs it before stopping it.": {},
+    "Show Activity from Same Process": {},
+    "Show All": {},
+    "Show Git Diff": {},
+    "Show in Timeline": {},
+    "Showing current processes and ports only. History and protection stay off until it's installed.": {},
+    "Sidewatch": {},
+    "Sidewatch immediately ends this exact process (SIGKILL). Unsaved work in that process will be lost.": {},
+    "Sidewatch sends a termination request (SIGTERM) to this exact process only. It may take time to exit or may ignore the request.": {},
+    "Signing ID": {},
+    "Snapshot": {
+      "comment": "Attribution evidence: from a process list, not recorded history"
+    },
+    "Some links are inferred from process lists rather than recorded launches.": {},
+    "Source": {},
+    "Started": {},
+    "Started from the process above by %@ (%@)": {},
+    "State": {},
+    "Status": {},
+    "Still running after its agent exited": {},
+    "Stop": {},
+    "Stop signal sent. Waiting for the process to exit.": {},
+    "Stop “%@” (PID %lld)?": {},
+    "Stopping a process requires the monitor service connection.": {},
+    "Stopping requires the monitor extension's live identity for this exact process. It can still be inspected.": {},
+    "Stopping requires the monitor's live identity for this process.": {},
+    "Stop…": {},
+    "Storage failure": {},
+    "System policy doesn't allow the monitor extension to be installed.": {},
+    "TCP": {
+      "comment": "Transport protocol"
+    },
+    "Target": {},
+    "The Item No Longer Exists": {},
+    "The Sidewatch monitor extension is installed but turned off.": {},
+    "The Sidewatch monitor service is not connected.": {},
+    "The Sidewatch monitor service is unavailable (error %lld).": {},
+    "The Sidewatch monitor service is unavailable.": {},
+    "The action couldn't be saved to history.": {},
+    "The active mode is Record Only, so this rule isn't evaluated.": {},
+    "The activity history changed. Reload the history and try again.": {},
+    "The diff is too large and was truncated.": {},
+    "The monitor can't collect activity right now.": {},
+    "The monitor couldn't verify this process (error %lld).": {},
+    "The monitor extension couldn't be activated (%@).": {},
+    "The monitor extension is unavailable.": {},
+    "The monitor extension's code signature is invalid.": {},
+    "The monitor is missing the Endpoint Security entitlement. Activity isn't being collected.": {},
+    "The monitor isn't collecting activity, so protection settings can't be applied.": {},
+    "The monitor request was canceled.": {},
+    "The monitor service disconnected. History shown may be out of date.": {},
+    "The monitor service reply could not be read.": {},
+    "The monitor service reported an error (%@).": {},
+    "The monitor service returned an incomplete reply.": {},
+    "The monitor service returned an invalid process token.": {},
+    "The monitor service uses an unsupported protocol version.": {},
+    "The name or path contains an invalid character.": {},
+    "The operation couldn't be completed.": {},
+    "The path is too long.": {},
+    "The process changed or restarted since it was listed. Nothing was sent.": {},
+    "The process has exited.": {},
+    "The process is no longer running.": {},
+    "The protection settings are invalid.": {},
+    "The request could not be encoded.": {},
+    "The rule stops applying once the monitor confirms the change. Past matches stay in history.": {},
+    "The rule wasn't saved. See the message on the Protection Rules page.": {},
+    "The rule's file or folder couldn't be found.": {},
+    "The rule's target type doesn't match the item on disk.": {},
+    "The settings were saved but the monitor didn't confirm them as active. They aren't in effect.": {},
+    "The signal couldn't be sent (error %lld).": {},
+    "The timeline requires a connection to the monitor extension.": {},
+    "This copy of Sidewatch isn't signed with the Endpoint Security entitlement. Showing current processes and ports only.": {},
+    "This file has no committed version, so there's nothing to compare it with.": {},
+    "This file isn't in a Git repository, so no diff is available.": {},
+    "This process can't be signaled.": {},
+    "This process has no listening ports.": {},
+    "Time": {},
+    "Timeline": {
+      "comment": "Sidebar page"
+    },
+    "To": {},
+    "Toggle Inspector": {},
+    "Toggle Sidebar": {},
+    "Try Again": {},
+    "Turn On Protect": {},
+    "Turn On Protect Mode?": {},
+    "UDP": {
+      "comment": "Transport protocol"
+    },
+    "Unavailable": {},
+    "Uncertain": {},
+    "Uncertain: part of this attribution is inferred rather than directly observed.": {},
+    "Undo": {},
+    "Unknown": {
+      "comment": "Agent or process state"
+    },
+    "Unknown origin": {},
+    "Unknown origin. No recorded or inferred relationship to an agent.": {},
+    "Unknown process": {},
+    "Using %@ on disk.": {},
+    "View": {},
+    "Waiting for the monitor to confirm these settings. The rule isn't active yet.": {},
+    "Which services to show": {},
+    "Window": {},
+    "Working Directory": {},
+    "Would Block": {
+      "comment": "Dry Run match that was allowed"
+    },
+    "Would Block: a rule matched in Dry Run. The operation was allowed.": {},
+    "Write": {
+      "comment": "Activity kind"
+    },
+    "You can create up to 512 rules.": {},
+    "You don't have permission to signal this process.": {},
+    "Zoom": {},
+    "exec": {},
+    "exited": {},
+    "fork": {},
+    "running": {},
+    "“%@” was moved or deleted after this activity was recorded.": {}
+  },
+  "version": "1.0"
+}
