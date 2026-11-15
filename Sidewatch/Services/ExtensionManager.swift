@@ -48,6 +48,9 @@ final class ExtensionManager: NSObject {
     }
 
     private var request: OSSystemExtensionRequest?
+    /// Set when an install was canceled because a newer monitor is already installed, so the
+    /// cancellation reports the installed monitor's state instead of "not installed".
+    private var keptNewerExtension = false
     private var removal: CheckedContinuation<MonitorRemovalOutcome, Never>?
 
     override init() {
@@ -241,8 +244,42 @@ extension ExtensionManager: OSSystemExtensionRequestDelegate {
         actionForReplacingExtension existing: OSSystemExtensionProperties,
         withExtension ext: OSSystemExtensionProperties
     ) -> OSSystemExtensionRequest.ReplacementAction {
+        // An older copy of Sidewatch must not replace a newer monitor: the newer one may own
+        // a database the older build refuses to open.
+        if Self.isOlder(ext, than: existing) {
+            Diagnostics.lifecycle.notice("Kept the installed system extension; the bundled one is older.")
+            MainActor.assumeIsolated { keptNewerExtension = true }
+            return .cancel
+        }
         Diagnostics.lifecycle.notice("Replacing an existing system extension.")
         return .replace
+    }
+
+    /// Compares (short version, build) numerically, component by component.
+    nonisolated static func isOlder(_ candidate: OSSystemExtensionProperties,
+                                    than installed: OSSystemExtensionProperties) -> Bool {
+        isOlder(version: candidate.bundleShortVersion, build: candidate.bundleVersion,
+                than: installed.bundleShortVersion, build: installed.bundleVersion)
+    }
+
+    nonisolated static func isOlder(version: String, build: String, than installedVersion: String,
+                                    build installedBuild: String) -> Bool {
+        func components(_ value: String) -> [Int] {
+            value.split(separator: ".").map { Int($0.prefix(while: \.isNumber)) ?? 0 }
+        }
+        func compare(_ lhs: [Int], _ rhs: [Int]) -> ComparisonResult {
+            for index in 0..<max(lhs.count, rhs.count) {
+                let left = index < lhs.count ? lhs[index] : 0
+                let right = index < rhs.count ? rhs[index] : 0
+                if left != right { return left < right ? .orderedAscending : .orderedDescending }
+            }
+            return .orderedSame
+        }
+        switch compare(components(version), components(installedVersion)) {
+        case .orderedAscending: return true
+        case .orderedDescending: return false
+        case .orderedSame: return compare(components(build), components(installedBuild)) == .orderedAscending
+        }
     }
 
     nonisolated func requestNeedsUserApproval(_ request: OSSystemExtensionRequest) {
@@ -301,6 +338,13 @@ extension ExtensionManager: OSSystemExtensionRequestDelegate {
                 return
             }
             if operation == .checking { lastChecked = Date() }
+            if keptNewerExtension, domain == OSSystemExtensionErrorDomain,
+               code == OSSystemExtensionError.Code.requestCanceled.rawValue {
+                keptNewerExtension = false
+                finish(identifier)
+                queryProperties()
+                return
+            }
             applyFailure(domain: domain, code: code)
             finish(identifier)
         }
