@@ -327,47 +327,58 @@ final class ActivityViewController: NSViewController, NSTableViewDataSource, NST
 
     // MARK: Timeline filters
 
+    /// Most recent sessions offered in the Agent filter; older ones stay reachable from the
+    /// inspector's Show in Timeline.
+    private static let sessionChoiceLimit = 100
+
     private func refreshFilterBar() {
         let filter = viewModel.timelineFilter
 
-        sessionPopup.removeAllItems()
-        sessionPopup.addItem(withTitle: String(localized: "All Agents"))
-        popupSessions = []
-        for session in viewModel.timelineSessions {
-            let title = String(localized: "\(session.agent.name) — \(DisplayText.project(session.project)) — \(DisplayText.dateTime(session.startedAt))")
-            sessionPopup.addItem(withTitle: title)
-            popupSessions.append(session.id)
+        var sessions = Array(viewModel.timelineSessions.prefix(Self.sessionChoiceLimit))
+        if let sessionID = filter.sessionID, !sessions.contains(where: { $0.id == sessionID }),
+           let selected = viewModel.timelineSessions.first(where: { $0.id == sessionID }) {
+            sessions.append(selected)
         }
-        if let sessionID = filter.sessionID, let index = popupSessions.firstIndex(of: sessionID) {
-            sessionPopup.selectItem(at: index + 1)
-        } else { sessionPopup.selectItem(at: 0) }
+        popupSessions = sessions.map(\.id)
+        Self.fill(sessionPopup, titles: [String(localized: "All Agents")] + sessions.map { session in
+            String(localized: "\(session.agent.name) — \(DisplayText.project(session.project)) — \(DisplayText.dateTime(session.startedAt))")
+        })
+        let sessionIndex = filter.sessionID.flatMap { popupSessions.firstIndex(of: $0) }.map { $0 + 1 } ?? 0
+        if sessionPopup.indexOfSelectedItem != sessionIndex { sessionPopup.selectItem(at: sessionIndex) }
 
-        projectPopup.removeAllItems()
-        projectPopup.addItem(withTitle: String(localized: "All Projects"))
-        popupProjects = []
-        for project in viewModel.timelineProjects {
-            projectPopup.addItem(withTitle: project.name)
-            projectPopup.lastItem?.toolTip = project.root
-            popupProjects.append(project.root)
+        let projects = viewModel.timelineProjects
+        popupProjects = projects.map(\.root)
+        if Self.fill(projectPopup, titles: [String(localized: "All Projects")] + projects.map(\.name)) {
+            for (index, project) in projects.enumerated() { projectPopup.item(at: index + 1)?.toolTip = project.root }
         }
-        if let root = filter.projectRoot, let index = popupProjects.firstIndex(of: root) {
-            projectPopup.selectItem(at: index + 1)
-        } else { projectPopup.selectItem(at: 0) }
+        let projectIndex = filter.projectRoot.flatMap { popupProjects.firstIndex(of: $0) }.map { $0 + 1 } ?? 0
+        if projectPopup.indexOfSelectedItem != projectIndex { projectPopup.selectItem(at: projectIndex) }
 
-        kindPopup.removeAllItems()
-        kindPopup.addItem(withTitle: String(localized: "All Events"))
-        for kind in ActivityKind.allCases { kindPopup.addItem(withTitle: DisplayText.kind(kind)) }
-        if let kind = filter.kind, let index = ActivityKind.allCases.firstIndex(of: kind) {
-            kindPopup.selectItem(at: index + 1)
-        } else { kindPopup.selectItem(at: 0) }
+        Self.fill(kindPopup, titles: [String(localized: "All Events")] + ActivityKind.allCases.map(DisplayText.kind))
+        let kindIndex = filter.kind.flatMap { ActivityKind.allCases.firstIndex(of: $0) }.map { $0 + 1 } ?? 0
+        if kindPopup.indexOfSelectedItem != kindIndex { kindPopup.selectItem(at: kindIndex) }
 
-        outcomePopup.removeAllItems()
-        for outcome in TimelineOutcomeFilter.allCases { outcomePopup.addItem(withTitle: DisplayText.outcomeFilter(outcome)) }
-        outcomePopup.selectItem(at: TimelineOutcomeFilter.allCases.firstIndex(of: filter.outcome) ?? 0)
+        Self.fill(outcomePopup, titles: TimelineOutcomeFilter.allCases.map(DisplayText.outcomeFilter))
+        let outcomeIndex = TimelineOutcomeFilter.allCases.firstIndex(of: filter.outcome) ?? 0
+        if outcomePopup.indexOfSelectedItem != outcomeIndex { outcomePopup.selectItem(at: outcomeIndex) }
 
         clearFiltersButton.isEnabled = filter != TimelineFilter()
         let enabled = viewModel.isHistoryAvailable
-        for popup in [sessionPopup, projectPopup, kindPopup, outcomePopup] { popup.isEnabled = enabled }
+        for popup in [sessionPopup, projectPopup, kindPopup, outcomePopup] where popup.isEnabled != enabled {
+            popup.isEnabled = enabled
+        }
+    }
+
+    /// Replaces a popup's items only when they changed, so a refresh never disturbs an open menu.
+    @discardableResult
+    private static func fill(_ popup: NSPopUpButton, titles: [String]) -> Bool {
+        guard popup.itemTitles != titles else { return false }
+        popup.removeAllItems()
+        // addItems(withTitles:) drops duplicate titles; each session needs its own row.
+        for title in titles {
+            popup.menu?.addItem(NSMenuItem(title: title, action: nil, keyEquivalent: ""))
+        }
+        return true
     }
 
     @objc private func filterChanged(_ sender: NSPopUpButton) {

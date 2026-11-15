@@ -425,6 +425,15 @@ enum TableDiff {
     static func apply(to table: NSTableView, old: [String], new: [String], changed: Set<String> = []) {
         let difference = new.difference(from: old).inferringMoves()
         let churn = difference.insertions.count + difference.removals.count
+        // The common periodic refresh: same rows, some values changed. Reload just those
+        // cells so selection, focus, and scroll position are untouched.
+        if churn == 0, table.numberOfRows == new.count {
+            let refreshed = IndexSet(new.enumerated().compactMap { changed.contains($0.element) ? $0.offset : nil })
+            if !refreshed.isEmpty {
+                table.reloadData(forRowIndexes: refreshed, columnIndexes: IndexSet(integersIn: 0..<table.numberOfColumns))
+            }
+            return
+        }
         guard window(of: table) != nil, !old.isEmpty, churn > 0, churn <= 60, !Motion.reduceMotion else {
             table.reloadData()
             return

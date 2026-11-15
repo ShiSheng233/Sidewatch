@@ -438,16 +438,20 @@ private final class BadgeView: AppearanceAwareView {
         defer { value = newValue }
         guard newValue != value else { return }
         guard let newValue else {
-            if animated { Motion.animate(Motion.quick, { self.animator().alphaValue = 0 }, completion: { self.isHidden = true }) }
+            // A count that arrives during the fade-out keeps the badge; only a badge that is
+            // still empty when the fade completes is hidden.
+            if animated { Motion.animate(Motion.quick, { self.animator().alphaValue = 0 }, completion: { if self.value == nil { self.isHidden = true } }) }
             else { isHidden = true }
             return
         }
         if animated, let old = value { Motion.roll(label, upward: newValue > old) }
         label.stringValue = newValue.formatted()
-        if isHidden {
-            isHidden = false
-            alphaValue = animated ? 0 : 1
-            if animated { Motion.animate(Motion.standard) { self.animator().alphaValue = 1 } }
+        if isHidden || alphaValue < 1 {
+            if isHidden {
+                isHidden = false
+                alphaValue = animated ? 0 : 1
+            }
+            if animated { Motion.animate(Motion.standard) { self.animator().alphaValue = 1 } } else { alphaValue = 1 }
         }
     }
 

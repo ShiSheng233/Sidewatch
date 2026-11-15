@@ -532,8 +532,11 @@ final class MonitorSettingsPane: SettingsPaneController {
         switch health.availability {
         case .active:
             let mode = health.activeMode.map(DisplayText.mode) ?? DisplayText.mode(.recordOnly)
-            let dropped = health.droppedEvents > 0 ? " " + String(localized: "\(Int(health.droppedEvents)) events were dropped.") : ""
-            collectionRow.set(health.droppedEvents > 0 ? .warning : .ok, String(localized: "Collecting in \(mode) mode.") + dropped)
+            let detail = health.droppedEvents > 0
+                ? String(localized: "Collecting in \(mode) mode. \(Int(health.droppedEvents)) events were dropped.",
+                         comment: "Monitor status: mode name, then the number of dropped events")
+                : String(localized: "Collecting in \(mode) mode.")
+            collectionRow.set(health.droppedEvents > 0 ? .warning : .ok, detail)
         case .fullDiskAccessRequired:
             collectionRow.set(.warning, String(localized: "Waiting for Full Disk Access."))
         case .notEntitled:

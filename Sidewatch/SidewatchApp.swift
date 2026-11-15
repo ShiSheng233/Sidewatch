@@ -27,7 +27,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var disk: AgentDiskViewModel?
     private var windowController: MainWindowController?
     private var settingsController: SettingsWindowController?
-    private var notifiedLeftovers: Set<String> = []
+    /// Leftovers already announced. Persisted so relaunching doesn't announce them again.
+    private var notifiedLeftovers: Set<String> = Set(UserDefaults.standard.stringArray(forKey: AppDelegate.notifiedLeftoversKey) ?? []) {
+        didSet {
+            guard notifiedLeftovers != oldValue else { return }
+            UserDefaults.standard.set(Array(notifiedLeftovers).sorted(), forKey: Self.notifiedLeftoversKey)
+        }
+    }
+    private static let notifiedLeftoversKey = "Sidewatch.notifiedLeftovers"
     private var notificationsAuthorized: Bool?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -66,7 +73,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         viewModel?.stop()
     }
 
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+    /// Closing the window keeps Sidewatch running: leftover reminders and scheduled Agent Disk
+    /// cleanup only work while the app is open. Clicking the Dock icon reopens the window.
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { true }
 

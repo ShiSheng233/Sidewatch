@@ -181,7 +181,26 @@
       }
     },
     "%lld days" : {
-
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld day"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld days"
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "%lld eligible" : {
       "comment" : "Disk audit session row: number of eligible files"
@@ -282,9 +301,6 @@
         }
       }
     },
-    "%lld events were dropped." : {
-
-    },
     "%lld events were dropped. History is incomplete for those periods." : {
       "localizations" : {
         "en" : {
@@ -331,7 +347,27 @@
       }
     },
     "%lld hours" : {
-      "comment" : "Disk audit idle timeout"
+      "comment" : "Disk audit idle timeout",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld hour"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld hours"
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "%lld leftover processes" : {
       "localizations" : {
@@ -867,6 +903,39 @@
     },
     "Collecting activity for your account in %@ mode." : {
 
+    },
+    "Collecting in %@ mode. %lld events were dropped." : {
+      "comment" : "Monitor status: mode name, then the number of dropped events",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collecting in %1$@ mode. %#@events@"
+          },
+          "substitutions" : {
+            "events" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg event was dropped."
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg events were dropped."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Collecting in %@ mode." : {
 

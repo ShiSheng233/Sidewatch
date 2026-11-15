@@ -169,7 +169,24 @@ final class ActivityViewModel {
     private var refreshTimer: Timer?
     private var refreshInFlight = false
     private var refreshQueued = false
-    private var commitDebounce: Task<Void, Never>?
+    /// A queued refresh that must also reload the monitor snapshot.
+    private var refreshQueuedWithMonitor = false
+    /// Set by each commit; the periodic refresh reads the monitor snapshot only when history
+    /// changed since the last read, or when the last read is old.
+    private var monitorSnapshotStale = true
+    private var monitorSnapshotReadAt: Date?
+    private static let monitorSnapshotMaxAge: TimeInterval = 30
+    /// Commit notifications are throttled, not debounced: the first refreshes at once and
+    /// commits during the window are folded into one trailing refresh, so a steady stream of
+    /// commits still updates the page.
+    private var commitThrottle: Task<Void, Never>?
+    private var commitPending = false
+    private static let commitInterval: Duration = .milliseconds(750)
+    /// Incremented whenever the timeline's rows are replaced, so a late catch-up reply for an
+    /// earlier filter or store can't insert rows into the current list.
+    private var timelineGeneration = 0
+    private var catchUpInFlight = false
+    private var catchUpPending = false
     private var reconnectTask: Task<Void, Never>?
     private var reconnectDelay: TimeInterval = 2
     private var relatedTask: Task<Void, Never>?
@@ -199,7 +216,7 @@ final class ActivityViewModel {
         connection.onDisconnect = { [weak self] in self?.monitorDisconnected() }
 
         let timer = Timer(timeInterval: 5, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.refresh() }
+            MainActor.assumeIsolated { self?.refresh(includingMonitor: false) }
         }
         timer.tolerance = 1
         RunLoop.main.add(timer, forMode: .common)
@@ -213,7 +230,7 @@ final class ActivityViewModel {
         refreshTimer?.invalidate()
         refreshTimer = nil
         reconnectTask?.cancel()
-        commitDebounce?.cancel()
+        commitThrottle?.cancel()
         connection.disconnect()
     }
 
@@ -375,6 +392,7 @@ final class ActivityViewModel {
         link = .disconnected
         health = nil
         timelineCursor = nil
+        monitorSnapshotStale = true
         notify(.status)
         scheduleReconnect()
     }
@@ -385,20 +403,33 @@ final class ActivityViewModel {
     }
 
     private func monitorCommitted(storeID: String, watermark: Int64) {
-        commitDebounce?.cancel()
-        commitDebounce = Task { [weak self] in
-            try? await Task.sleep(for: .milliseconds(400))
+        monitorSnapshotStale = true
+        guard commitThrottle == nil else {
+            commitPending = true
+            return
+        }
+        refresh()
+        catchUpTimeline()
+        commitThrottle = Task { [weak self] in
+            try? await Task.sleep(for: Self.commitInterval)
             guard !Task.isCancelled, let self else { return }
-            refresh()
-            catchUpTimeline()
+            commitThrottle = nil
+            if commitPending {
+                commitPending = false
+                monitorCommitted(storeID: storeID, watermark: watermark)
+            }
         }
     }
 
     // MARK: Commands — refresh
 
-    func refresh() {
+    /// Refreshes the native process list and, unless `includingMonitor` is false and history
+    /// hasn't changed, the monitor snapshot.
+    func refresh(includingMonitor: Bool = true) {
+        if includingMonitor { monitorSnapshotStale = true }
         guard !refreshInFlight else {
             refreshQueued = true
+            refreshQueuedWithMonitor = refreshQueuedWithMonitor || includingMonitor
             return
         }
         refreshInFlight = true
@@ -407,10 +438,18 @@ final class ActivityViewModel {
             await performRefresh()
             refreshInFlight = false
             if refreshQueued {
+                let monitor = refreshQueuedWithMonitor
                 refreshQueued = false
-                refresh()
+                refreshQueuedWithMonitor = false
+                refresh(includingMonitor: monitor)
             }
         }
+    }
+
+    private var monitorSnapshotNeeded: Bool {
+        guard link == .connected else { return false }
+        guard !monitorSnapshotStale, monitorSnapshot != nil, let readAt = monitorSnapshotReadAt else { return true }
+        return Date().timeIntervalSince(readAt) >= Self.monitorSnapshotMaxAge
     }
 
     private func performRefresh() async {
@@ -425,17 +464,22 @@ final class ActivityViewModel {
         }
         nativeSnapshot = native
 
-        if link == .connected {
+        if monitorSnapshotNeeded {
+            // Cleared before the read: a commit that lands during it marks it stale again.
+            monitorSnapshotStale = false
             do {
                 let snapshot = try await connection.snapshot()
                 if let previous = monitorSnapshot, previous.storeID != snapshot.storeID {
                     timeline = []
                     timelineCursor = nil
+                    timelineGeneration += 1
                 }
                 monitorSnapshot = snapshot
+                monitorSnapshotReadAt = Date()
                 health = snapshot.health
                 monitorRefreshErrorMessage = nil
             } catch {
+                monitorSnapshotStale = true
                 monitorRefreshErrorMessage = (error as? MonitorConnectionError)?.errorDescription
                     ?? String(localized: "The monitor service reply could not be read.")
             }
@@ -500,6 +544,7 @@ final class ActivityViewModel {
             return
         }
         timelineTask?.cancel()
+        timelineGeneration += 1
         timeline = []
         timelineCursor = nil
         timelineState = .loading
@@ -518,6 +563,8 @@ final class ActivityViewModel {
                 timelineState = .failed(Self.message(for: error))
             }
             notify(.timeline)
+            // A commit that arrived while the first page loaded is caught up now.
+            if catchUpPending { catchUpTimeline() }
         }
     }
 
@@ -550,9 +597,15 @@ final class ActivityViewModel {
         }
     }
 
-    /// Fetches activity newer than the newest displayed row and prepends it.
+    /// Fetches activity newer than the newest displayed row and prepends it. One catch-up
+    /// runs at a time; commits during it, or during a page load, schedule one more.
     private func catchUpTimeline() {
-        guard isHistoryAvailable, timelineState != .loading else { return }
+        guard isHistoryAvailable else { return }
+        guard timelineState != .loading, !catchUpInFlight else {
+            catchUpPending = true
+            return
+        }
+        catchUpPending = false
         guard let cursor = timelineCursor, let newest = timeline.first?.id else {
             if page == .timeline { reloadTimeline() }
             return
@@ -561,21 +614,33 @@ final class ActivityViewModel {
         query.afterID = newest
         query.storeID = cursor.storeID
         query.limit = 500
+        let generation = timelineGeneration
+        catchUpInFlight = true
         Task { [weak self] in
             guard let self else { return }
+            defer {
+                catchUpInFlight = false
+                if catchUpPending { catchUpTimeline() }
+            }
             do {
                 let page = try await connection.activities(query)
+                // The list was replaced (new filter, search, store, or clear) while this ran.
+                guard generation == timelineGeneration else { return }
                 if page.nextBeforeID != nil {
                     // More than one page arrived; reload for a consistent view.
+                    catchUpPending = false
                     reloadTimeline()
                     return
                 }
                 guard !page.activities.isEmpty else { return }
                 let known = Set(timeline.map(\.id))
                 let fresh = page.activities.filter { !known.contains($0.id) }.sorted { $0.id > $1.id }
+                guard !fresh.isEmpty else { return }
                 timeline.insert(contentsOf: fresh, at: 0)
                 notify(.timeline)
             } catch {
+                guard generation == timelineGeneration else { return }
+                catchUpPending = false
                 reloadTimeline()
             }
         }
@@ -724,6 +789,7 @@ final class ActivityViewModel {
             try await connection.clearHistory()
             timeline = []
             timelineCursor = nil
+            timelineGeneration += 1
             refresh()
             reloadTimeline()
             return nil
@@ -752,6 +818,7 @@ final class ActivityViewModel {
         resetLocalState()
         timeline = []
         timelineCursor = nil
+        timelineGeneration += 1
         refresh()
         if isHistoryAvailable { reloadTimeline() }
         return nil
@@ -763,6 +830,7 @@ final class ActivityViewModel {
         health = nil
         timeline = []
         timelineCursor = nil
+        timelineGeneration += 1
         timelineState = .unavailable
         relatedActivity = .idle
         controlFeedback = nil

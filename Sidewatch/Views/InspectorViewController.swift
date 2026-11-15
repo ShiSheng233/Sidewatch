@@ -45,7 +45,15 @@ final class InspectorViewController: NSViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         observers.append(viewModel.observe { [weak self] change in
-            if change.contains(.inspector) || change.contains(.page) || change.contains(.status) { self?.render() }
+            guard let self else { return }
+            if change.contains(.inspector) || change.contains(.page) {
+                render()
+            } else if change.contains(.status), currentState != renderedState {
+                // The periodic refresh posts .status every few seconds. Rebuilding then would
+                // reset the diff's scroll position and move keyboard and VoiceOver focus, so
+                // only a change to something the inspector shows rebuilds it.
+                render()
+            }
         })
         rules.observe { [weak self] in
             if self?.viewModel.page == .rules { self?.render() }
@@ -56,6 +64,28 @@ final class InspectorViewController: NSViewController {
     // MARK: Rendering
 
     private var renderedSubjectKey = ""
+
+    /// Everything outside the subject row that the inspector draws.
+    private struct RenderState: Equatable {
+        var page: SidewatchPage
+        var inspector: InspectorSubject
+        var related: RelatedActivityState
+        var diff: DiffState
+        var feedback: ControlFeedback?
+        var pending: Set<String>
+        var historyAvailable: Bool
+    }
+
+    private var renderedState: RenderState?
+
+    private var currentState: RenderState {
+        RenderState(page: viewModel.page, inspector: viewModel.inspector, related: viewModel.relatedActivity,
+                    diff: viewModel.diff, feedback: viewModel.controlFeedback, pending: viewModel.pendingControls,
+                    historyAvailable: viewModel.isHistoryAvailable)
+    }
+
+    /// The diff view survives rebuilds of the same diff, keeping its scroll position and selection.
+    private var cachedDiff: (text: String, view: NSView)?
 
     private var subjectKey: String {
         if viewModel.page == .rules { return "rule:" + (rules.selectedRuleID ?? "") }
@@ -72,11 +102,25 @@ final class InspectorViewController: NSViewController {
         let key = subjectKey
         let subjectChanged = key != renderedSubjectKey
         renderedSubjectKey = key
-        if subjectChanged { Motion.fade(stack, duration: Motion.standard) }
+        renderedState = currentState
+        if subjectChanged {
+            Motion.fade(stack, duration: Motion.standard)
+            cachedDiff = nil
+        }
+        // A rebuild of the same subject keeps the reader's place: scroll offset and the
+        // focused button are restored after the new views are in place.
+        let focusedTitle = subjectChanged ? nil : focusedButtonTitle()
+        let scrollOrigin = scroll.contentView.bounds.origin
         actionHandlers.removeAll()
         for view in stack.arrangedSubviews { stack.removeArrangedSubview(view); view.removeFromSuperview() }
         defer {
             if subjectChanged, let first = stack.arrangedSubviews.first { Motion.entrance(first) }
+            if !subjectChanged {
+                view.layoutSubtreeIfNeeded()
+                scroll.contentView.scroll(to: scrollOrigin)
+                scroll.reflectScrolledClipView(scroll.contentView)
+                if let focusedTitle { restoreFocus(toButtonTitled: focusedTitle) }
+            }
         }
         if viewModel.page == .rules {
             renderRule()
@@ -450,6 +494,13 @@ final class InspectorViewController: NSViewController {
     }
 
     private func diffView(_ text: String) -> NSView {
+        if let cachedDiff, cachedDiff.text == text { return cachedDiff.view }
+        let view = makeDiffView(text)
+        cachedDiff = (text, view)
+        return view
+    }
+
+    private func makeDiffView(_ text: String) -> NSView {
         let textView = NSTextView()
         textView.isEditable = false
         textView.isSelectable = true
@@ -464,12 +515,22 @@ final class InspectorViewController: NSViewController {
         let font = NSFont.monospacedSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
         let attributed = NSMutableAttributedString()
         for line in text.split(separator: "\n", omittingEmptySubsequences: false) {
-            let color: NSColor
-            if line.hasPrefix("+") && !line.hasPrefix("+++") { color = .systemGreen }
-            else if line.hasPrefix("-") && !line.hasPrefix("---") { color = .systemRed }
-            else if line.hasPrefix("@@") { color = .systemBlue }
-            else { color = .labelColor }
-            attributed.append(NSAttributedString(string: String(line) + "\n", attributes: [.font: font, .foregroundColor: color]))
+            var attributes: [NSAttributedString.Key: Any] = [.font: font]
+            if line.hasPrefix("+") && !line.hasPrefix("+++") {
+                attributes[.foregroundColor] = NSColor.systemGreen
+                attributes[.backgroundColor] = NSColor.systemGreen.withAlphaComponent(0.12)
+            } else if line.hasPrefix("-") && !line.hasPrefix("---") {
+                attributes[.foregroundColor] = NSColor.systemRed
+                attributes[.backgroundColor] = NSColor.systemRed.withAlphaComponent(0.12)
+            } else if line.hasPrefix("@@") {
+                attributes[.foregroundColor] = NSColor.systemBlue
+                attributes[.backgroundColor] = NSColor.systemBlue.withAlphaComponent(0.08)
+            } else if line.hasPrefix("diff ") || line.hasPrefix("index ") || line.hasPrefix("+++") || line.hasPrefix("---") {
+                attributes[.foregroundColor] = NSColor.secondaryLabelColor
+            } else {
+                attributes[.foregroundColor] = NSColor.labelColor
+            }
+            attributed.append(NSAttributedString(string: String(line) + "\n", attributes: attributes))
         }
         textView.textStorage?.setAttributedString(attributed)
         textView.setAccessibilityLabel(String(localized: "Git diff"))
@@ -481,6 +542,23 @@ final class InspectorViewController: NSViewController {
         scroll.translatesAutoresizingMaskIntoConstraints = false
         scroll.heightAnchor.constraint(equalToConstant: 280).isActive = true
         return scroll
+    }
+
+    // MARK: Focus
+
+    private func focusedButtonTitle() -> String? {
+        guard let button = view.window?.firstResponder as? NSButton, button.isDescendant(of: stack) else { return nil }
+        return button.title
+    }
+
+    private func restoreFocus(toButtonTitled title: String) {
+        func find(_ view: NSView) -> NSButton? {
+            if let button = view as? NSButton, button.title == title { return button }
+            for subview in view.subviews { if let match = find(subview) { return match } }
+            return nil
+        }
+        guard let button = find(stack), button.canBecomeKeyView else { return }
+        view.window?.makeFirstResponder(button)
     }
 
     // MARK: Building blocks
