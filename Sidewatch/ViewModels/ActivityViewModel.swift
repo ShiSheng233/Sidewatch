@@ -860,17 +860,17 @@ final class ActivityViewModel {
         let availability = extensionManager.availability
         switch availability {
         case .notInstalled:
-            result.append(.init(severity: .warning, message: String(localized: "Showing current processes and ports only. History and protection stay off until it's installed."), action: .installExtension, title: String(localized: "Monitor extension not installed")))
+            result.append(.init(severity: .warning, message: String(localized: "Showing live processes and ports only. Install to enable history and rules."), action: .installExtension, title: String(localized: "Monitor not installed")))
         case .awaitingApproval:
-            result.append(.init(severity: .warning, message: String(localized: "Approve the Sidewatch monitor extension in System Settings. History and protection are inactive until it's approved."), action: .openExtensionSettings, title: String(localized: "Approval needed")))
+            result.append(.init(severity: .warning, message: String(localized: "Approve the monitor extension in System Settings to enable history and protection."), action: .openExtensionSettings, title: String(localized: "Approval needed")))
         case .needsRestart:
-            result.append(.init(severity: .warning, message: String(localized: "Restart your Mac to finish installing the Sidewatch monitor extension."), action: nil, title: String(localized: "Restart required")))
+            result.append(.init(severity: .warning, message: String(localized: "Restart your Mac to finish installing the monitor extension."), action: nil, title: String(localized: "Restart required")))
         case .notEntitled:
-            result.append(.init(severity: .error, message: String(localized: "This copy of Sidewatch isn't signed with the Endpoint Security entitlement. Showing current processes and ports only."), action: nil, title: String(localized: "Monitoring unavailable")))
+            result.append(.init(severity: .error, message: String(localized: "Missing Endpoint Security entitlement. Showing live processes and ports only."), action: nil, title: String(localized: "Monitoring unavailable")))
         case .unavailable:
-            result.append(.init(severity: .error, message: extensionFailureMessage, action: .installExtension, title: String(localized: "Monitor extension unavailable")))
+            result.append(.init(severity: .error, message: extensionFailureMessage, action: .installExtension, title: String(localized: "Monitor unavailable")))
         case .fullDiskAccessRequired:
-            result.append(.init(severity: .warning, message: String(localized: "Grant Full Disk Access to the Sidewatch monitor so it can collect activity."), action: .openFullDiskAccess))
+            result.append(.init(severity: .warning, message: String(localized: "Grant Full Disk Access to the Sidewatch monitor to collect activity."), action: .openFullDiskAccess))
         case .connecting, .active:
             break
         }

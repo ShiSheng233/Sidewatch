@@ -19,12 +19,12 @@ final class AgentDiskSettingsPane: SettingsPaneController {
     override func build() {
         add(folders)
         let addRow = SettingsRow(
-            title: String(localized: "Another agent account"),
-            detail: String(localized: "Choose a folder named by CODEX_HOME or CLAUDE_CONFIG_DIR in your shell profile, or the folder that holds an agent’s session logs."),
+            title: String(localized: "Additional session folder"),
+            detail: String(localized: "Add custom CODEX_HOME, CLAUDE_CONFIG_DIR, or other session log folders."),
             accessories: [addButton]
         )
         add(SettingsSection(title: nil, rows: [addRow],
-                            footer: String(localized: "Files claimed by a session Sidewatch can't see may be cleaned up while that session still uses them. Add every folder an agent writes sessions to.")))
+                            footer: String(localized: "Add all custom session folders so active files aren't cleaned up early.")))
         disk.observe { [weak self] change in
             if change.contains(.report) || change.contains(.policy) { self?.render() }
         }
@@ -65,7 +65,7 @@ final class AgentDiskSettingsPane: SettingsPaneController {
         } else {
             folders.setRows(roots.map(row(for:)))
         }
-        folders.setFooter(String(localized: "Sidewatch reads each agent's default folders and the folders named by CODEX_HOME, CLAUDE_CONFIG_DIR, XDG_DATA_HOME, and PI_CODING_AGENT_DIR when the app can see them."))
+        folders.setFooter(String(localized: "Automatically includes default agent folders and visible environment variables (CODEX_HOME, CLAUDE_CONFIG_DIR, XDG_DATA_HOME, PI_CODING_AGENT_DIR)."))
         contentChanged()
     }
 
@@ -84,11 +84,15 @@ final class AgentDiskSettingsPane: SettingsPaneController {
                                                  color: .systemOrange))
         }
         if root.isCustom {
-            let remove = FolderButton(image: NSImage(systemSymbolName: "minus.circle", accessibilityDescription: String(localized: "Remove Folder")) ?? NSImage(),
+            let remove = FolderButton(image: NSImage(systemSymbolName: "minus.circle.fill", accessibilityDescription: String(localized: "Remove Folder")) ?? NSImage(),
                                       target: self, action: #selector(removeFolder(_:)))
             remove.isBordered = false
+            remove.symbolConfiguration = .init(pointSize: 14, weight: .regular)
             remove.contentTintColor = .secondaryLabelColor
             remove.toolTip = String(localized: "Remove Folder")
+            remove.translatesAutoresizingMaskIntoConstraints = false
+            remove.widthAnchor.constraint(equalToConstant: 22).isActive = true
+            remove.heightAnchor.constraint(equalToConstant: 22).isActive = true
             remove.folder = root.folder
             accessories.append(remove)
         }

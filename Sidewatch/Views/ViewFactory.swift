@@ -42,11 +42,13 @@ enum ViewFactory {
         return scroll
     }
 
-    static func column(_ identifier: String, title: String, width: CGFloat, minWidth: CGFloat = 40) -> NSTableColumn {
+    static func column(_ identifier: String, title: String, width: CGFloat, minWidth: CGFloat = 40,
+                       alignment: NSTextAlignment = .left) -> NSTableColumn {
         let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier(identifier))
         column.title = title
         column.width = width
         column.minWidth = minWidth
+        column.headerCell.alignment = alignment
         column.headerCell.setAccessibilityLabel(title)
         return column
     }
@@ -61,22 +63,23 @@ enum ViewFactory {
         text.lineBreakMode = .byTruncatingMiddle
         text.allowsDefaultTighteningForTruncation = true
         text.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        text.setContentHuggingPriority(.init(1), for: .horizontal)
         let image = NSImageView()
         image.isHidden = true
         image.setContentHuggingPriority(.required, for: .horizontal)
+        image.setContentCompressionResistancePriority(.required, for: .horizontal)
         let stack = NSStackView(views: [image, text])
         stack.orientation = .horizontal
-        stack.spacing = 4
+        stack.alignment = .centerY
+        stack.spacing = 6
         stack.detachesHiddenViews = true
         stack.translatesAutoresizingMaskIntoConstraints = false
         cell.addSubview(stack)
         cell.textField = text
         cell.imageView = image
         NSLayoutConstraint.activate([
-            image.widthAnchor.constraint(equalToConstant: 16),
-            image.heightAnchor.constraint(equalToConstant: 16),
             stack.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 2),
-            stack.trailingAnchor.constraint(lessThanOrEqualTo: cell.trailingAnchor, constant: -2),
+            stack.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -2),
             stack.centerYAnchor.constraint(equalTo: cell.centerYAnchor)
         ])
         return cell
@@ -85,10 +88,12 @@ enum ViewFactory {
     /// `monospaced` is for commands, paths, and addresses; `numeric` uses tabular digits so
     /// PIDs, ports, and counts line up.
     static func configure(_ cell: NSTableCellView, text: String, color: NSColor = .labelColor,
-                          monospaced: Bool = false, numeric: Bool = false, symbol: String? = nil, symbolColor: NSColor? = nil,
+                          monospaced: Bool = false, numeric: Bool = false, alignment: NSTextAlignment = .left,
+                          symbol: String? = nil, symbolColor: NSColor? = nil,
                           symbolSize: CGFloat = 13, tooltip: String? = nil) {
         cell.textField?.stringValue = text
         cell.textField?.textColor = color
+        cell.textField?.alignment = alignment
         if monospaced {
             cell.textField?.font = .monospacedSystemFont(ofSize: NSFont.systemFontSize - 1, weight: .regular)
         } else if numeric {

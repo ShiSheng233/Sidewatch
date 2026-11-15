@@ -362,7 +362,7 @@ private final class NoticeView: AppearanceAwareView {
         }
         let stack = NSStackView(views: views)
         stack.spacing = 10
-        stack.alignment = .centerY
+        stack.alignment = .firstBaseline
         stack.edgeInsets = NSEdgeInsets(top: 12, left: 20, bottom: 12, right: 20)
         stack.translatesAutoresizingMaskIntoConstraints = false
         addSubview(stack)

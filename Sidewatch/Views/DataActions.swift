@@ -7,7 +7,7 @@ enum DataActions {
     static func confirmClearHistory(in window: NSWindow, viewModel: ActivityViewModel) {
         let alert = NSAlert()
         alert.messageText = String(localized: "Clear Activity History?")
-        alert.informativeText = String(localized: "Recorded file activity and finished history are removed. Running services and the origins needed to explain them are kept, and your rules and mode don't change. This is not secure erasure.")
+        alert.informativeText = String(localized: "Removes recorded events and finished sessions. Running services, rules, and mode are kept.")
         alert.addButton(withTitle: String(localized: "Clear History"))
         alert.addButton(withTitle: String(localized: "Cancel"))
         alert.buttons.first?.hasDestructiveAction = true
@@ -27,8 +27,8 @@ enum DataActions {
         alert.alertStyle = .critical
         alert.messageText = String(localized: "Erase All Sidewatch Data?")
         alert.informativeText = connected
-            ? String(localized: "All recorded activity, agent sessions, port history, and stop records are permanently removed. Your protection rules are deleted, the mode returns to Record Only, and retention and app preferences are reset. Processes running now stay tracked so attribution keeps working. This can't be undone.")
-            : String(localized: "The monitor isn't connected, so its recorded history and rules can't be erased now. Only this app's preferences and window layout will be reset.")
+            ? String(localized: "Permanently removes all history, sessions, rules, and preferences, and resets mode to Record Only. Active processes remain tracked. This can't be undone.")
+            : String(localized: "Monitor disconnected: only app preferences and window layout will be reset.")
         alert.addButton(withTitle: connected ? String(localized: "Erase All Data") : String(localized: "Reset Preferences"))
         alert.addButton(withTitle: String(localized: "Cancel"))
         alert.buttons.first?.hasDestructiveAction = true

@@ -61,7 +61,7 @@ final class RuleEditorViewController: NSViewController, NSTableViewDataSource, N
         table.doubleAction = #selector(editRule)
         table.setAccessibilityLabel(String(localized: "Protection rules"))
         for column in [
-            ViewFactory.column("enabled", title: String(localized: "On"), width: 36, minWidth: 36),
+            ViewFactory.column("enabled", title: String(localized: "On"), width: 40, minWidth: 40, alignment: .center),
             ViewFactory.column("name", title: String(localized: "Name"), width: 160),
             ViewFactory.column("target", title: String(localized: "Target"), width: 80),
             ViewFactory.column("path", title: String(localized: "Path"), width: 280),
@@ -147,7 +147,7 @@ final class RuleEditorViewController: NSViewController, NSTableViewDataSource, N
             activationPill.set(text: text, color: .systemOrange, live: false,
                                accessibilityText: String(localized: "Revision \(Int(selected)) is waiting for the monitor to confirm it. It isn't active yet."))
         }
-        coverageLabel.stringValue = String(localized: "Rules can prevent opening, deleting, and renaming or moving matched items. Creating and writing files is recorded but can't be blocked. Rules apply only to recognized agents and the processes they start.")
+        coverageLabel.stringValue = String(localized: "Applies to recognized agents and their child processes. Blocks open, delete, and rename/move; file creation and writes are recorded only.")
 
         if let error = rules.lastError {
             if errorLabel.stringValue != error || errorLabel.isHidden { Motion.fade(errorLabel) }
@@ -183,11 +183,11 @@ final class RuleEditorViewController: NSViewController, NSTableViewDataSource, N
         }
 
         var storage: [String] = []
-        if let bytes = rules.storageBytes { storage.append(String(localized: "Using \(DisplayText.bytes(bytes)) on disk.")) }
-        if let oldest = rules.oldestActivity { storage.append(String(localized: "Oldest activity: \(DisplayText.dateTime(oldest)).")) }
-        if let days = rules.retentionDays { storage.append(String(localized: "Activity is kept for \(days) days.")) }
-        if storage.isEmpty { storage.append(String(localized: "History is stored by the monitor extension and isn't available while it's disconnected.")) }
-        storage.append(String(localized: "Clearing history keeps running services, their origins, and your rules."))
+        if let bytes = rules.storageBytes { storage.append(String(localized: "\(DisplayText.bytes(bytes)) on disk.")) }
+        if let oldest = rules.oldestActivity { storage.append(String(localized: "Oldest: \(DisplayText.dateTime(oldest)).")) }
+        if let days = rules.retentionDays { storage.append(String(localized: "Kept for \(days) days.")) }
+        if storage.isEmpty { storage.append(String(localized: "Connect the monitor to view history storage.")) }
+        storage.append(String(localized: "Clearing history keeps running services and rules."))
         storageLabel.stringValue = storage.joined(separator: " ")
     }
 
@@ -200,16 +200,13 @@ final class RuleEditorViewController: NSViewController, NSTableViewDataSource, N
         let rule = displayed[row]
         if column == "enabled" {
             let id = NSUserInterfaceItemIdentifier("rule.enabled")
-            let button = (tableView.makeView(withIdentifier: id, owner: nil) as? NSButton) ?? {
-                let button = NSButton(checkboxWithTitle: "", target: self, action: #selector(toggleEnabled(_:)))
-                button.identifier = id
-                return button
-            }()
-            button.state = rule.enabled ? .on : .off
-            button.tag = row
-            button.isEnabled = rules.isConnected && !rules.isSubmitting
-            button.setAccessibilityLabel(String(localized: "Enable \(rule.name)"))
-            return button
+            let cell = (tableView.makeView(withIdentifier: id, owner: nil) as? RuleToggleCellView)
+                ?? RuleToggleCellView(identifier: id, target: self, action: #selector(toggleEnabled(_:)))
+            cell.checkbox.state = rule.enabled ? .on : .off
+            cell.checkbox.tag = row
+            cell.checkbox.isEnabled = rules.isConnected && !rules.isSubmitting
+            cell.checkbox.setAccessibilityLabel(String(localized: "Enable \(rule.name)"))
+            return cell
         }
         let cell = ViewFactory.textCell(in: tableView, identifier: "rule." + column)
         let dimmed: NSColor = rule.enabled ? .labelColor : .tertiaryLabelColor
@@ -312,6 +309,25 @@ final class RuleEditorViewController: NSViewController, NSTableViewDataSource, N
         }
         presentAsSheet(form)
     }
+}
+
+/// Centered checkbox cell for the rule list's "On" column.
+private final class RuleToggleCellView: NSTableCellView {
+    let checkbox: NSButton
+
+    init(identifier: NSUserInterfaceItemIdentifier, target: AnyObject?, action: Selector) {
+        checkbox = NSButton(checkboxWithTitle: "", target: target, action: action)
+        super.init(frame: .zero)
+        self.identifier = identifier
+        checkbox.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(checkbox)
+        NSLayoutConstraint.activate([
+            checkbox.centerXAnchor.constraint(equalTo: centerXAnchor),
+            checkbox.centerYAnchor.constraint(equalTo: centerYAnchor)
+        ])
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 }
 
 /// Rounded card container used to group controls.
@@ -435,7 +451,7 @@ final class RuleFormViewController: NSViewController {
         grid.rowAlignment = .firstBaseline
         grid.column(at: 1).width = 420
 
-        let note = ViewFactory.label(String(localized: "Folder rules include everything inside the folder, but not folders with similar names. Unrecognized processes never match."), font: .systemFont(ofSize: NSFont.smallSystemFontSize), color: .secondaryLabelColor, wraps: true)
+        let note = ViewFactory.label(String(localized: "Folder rules cover all contents inside the folder. Unrecognized processes never match."), font: .systemFont(ofSize: NSFont.smallSystemFontSize), color: .secondaryLabelColor, wraps: true)
 
         spinner.style = .spinning
         spinner.controlSize = .small

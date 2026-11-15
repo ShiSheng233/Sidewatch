@@ -142,7 +142,7 @@ final class InspectorViewController: NSViewController {
 
     private func renderPlaceholder() {
         let label = ViewFactory.label(String(localized: "No Selection"), font: .systemFont(ofSize: 15, weight: .semibold), color: .secondaryLabelColor)
-        let detail = ViewFactory.label(String(localized: "Select an agent, event, port, or service to see where it came from."), color: .tertiaryLabelColor, wraps: true)
+        let detail = ViewFactory.label(String(localized: "Select an item to view its details."), color: .tertiaryLabelColor, wraps: true)
         add(label)
         add(detail)
     }
@@ -179,9 +179,9 @@ final class InspectorViewController: NSViewController {
         if !row.command.isEmpty { details.append((String(localized: "Command"), row.command)) }
         addGrid(details)
         if row.sessionID == nil {
-            addNote(String(localized: "Found in the current process list. Without monitor history, its launch chain and file activity are unknown."))
+            addNote(String(localized: "Current process only. Launch chain and file history require the monitor."))
         }
-        addNote(String(localized: "Chat titles and task contents aren't available from system events."))
+        addNote(String(localized: "Chat titles and prompts aren't visible to system events."))
 
         addLaunchChain(for: row.root)
         addRelatedActivity()
@@ -216,10 +216,10 @@ final class InspectorViewController: NSViewController {
     private func renderLeftover(_ row: LeftoverRow) {
         addHeader(title: DisplayText.executableName(row.execution), subtitle: String(localized: "Still running after its agent exited"), symbol: "exclamationmark.triangle.fill")
         if row.isShared {
-            addNote(String(localized: "Shared: this process is related to more than one agent session. Check that no one still needs it before stopping it."))
+            addNote(String(localized: "Shared by multiple sessions. Make sure it's no longer needed before stopping."))
         }
         if row.isUncertain {
-            addNote(String(localized: "Uncertain: part of this attribution is inferred rather than directly observed."))
+            addNote(String(localized: "Uncertain: attribution is partially inferred."))
         }
         addControls(target: row.controlTarget, record: row.execution, process: row.execution.identity.process, activeAgents: [])
 
@@ -366,7 +366,7 @@ final class InspectorViewController: NSViewController {
         }
         addActions(views)
         if target == nil {
-            addNote(String(localized: "Stopping requires the monitor extension's live identity for this exact process. It can still be inspected."))
+            addNote(String(localized: "Stopping requires the monitor's live process identity."))
         }
         if let feedback = viewModel.controlFeedback, feedback.processKey == process.stableID {
             let color: NSColor = feedback.signalSent && feedback.auditErrorCode == nil ? .secondaryLabelColor : .systemRed
@@ -401,7 +401,7 @@ final class InspectorViewController: NSViewController {
             return (attribution.agentName, String(localized: "\(DisplayText.evidence(attribution.evidence)), agent \(state)"))
         })
         if attributions.count > 1 {
-            addNote(String(localized: "More than one agent is related to this process. Sidewatch shows known relationships but can't detect every consumer of a service."))
+            addNote(String(localized: "Related to multiple agents. Other processes may also use this service."))
         }
     }
 
@@ -476,19 +476,19 @@ final class InspectorViewController: NSViewController {
         case .loaded(let result):
             switch result {
             case .diff(let repository, let text, let truncated):
-                addNote(String(localized: "Current working copy compared with HEAD in \((repository as NSString).lastPathComponent). This may include edits by other tools or people and doesn't show which agent changed each line."))
+                addNote(String(localized: "Working copy vs. HEAD in \((repository as NSString).lastPathComponent). May include edits from other tools."))
                 add(diffView(text))
-                if truncated { addNote(String(localized: "The diff is too large and was truncated.")) }
+                if truncated { addNote(String(localized: "Diff truncated (too large).")) }
             case .noChanges:
-                addNote(String(localized: "No differences from the last commit."))
+                addNote(String(localized: "No differences from HEAD."))
             case .noBaseline:
-                addNote(String(localized: "This file has no committed version, so there's nothing to compare it with."))
+                addNote(String(localized: "Untracked or uncommitted file."))
             case .notInRepository:
-                addNote(String(localized: "This file isn't in a Git repository, so no diff is available."))
+                addNote(String(localized: "Not in a Git repository."))
             case .gitUnavailable:
-                addNote(String(localized: "Git isn't available. Install the Command Line Tools to view diffs."))
+                addNote(String(localized: "Git unavailable. Install Command Line Tools to view diffs."))
             case .failed(let status):
-                addNote(String(localized: "Git couldn't produce a diff (status \(Int(status)))."))
+                addNote(String(localized: "Git diff failed (status \(Int(status)))."))
             }
         }
     }
@@ -598,7 +598,7 @@ final class InspectorViewController: NSViewController {
 
     private func addGrid(_ rows: [(String, String)]) {
         let grid = NSGridView(views: rows.map { key, value in
-            let keyLabel = ViewFactory.label(key, color: .secondaryLabelColor)
+            let keyLabel = ViewFactory.label(key, font: .systemFont(ofSize: NSFont.smallSystemFontSize), color: .secondaryLabelColor)
             keyLabel.alignment = .right
             let valueLabel = ViewFactory.label(value, selectable: true)
             valueLabel.lineBreakMode = .byTruncatingMiddle
@@ -606,9 +606,11 @@ final class InspectorViewController: NSViewController {
             valueLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
             return [keyLabel, valueLabel]
         })
-        grid.rowSpacing = 4
-        grid.columnSpacing = 8
+        grid.rowSpacing = 5
+        grid.columnSpacing = 10
+        grid.rowAlignment = .firstBaseline
         grid.column(at: 0).xPlacement = .trailing
+        grid.column(at: 0).width = 108
         grid.translatesAutoresizingMaskIntoConstraints = false
         add(grid)
     }

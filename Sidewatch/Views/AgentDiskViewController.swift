@@ -3,7 +3,7 @@ import AppKit
 /// Agent Disk page: audited temporary artifacts grouped under the agent sessions that wrote
 /// them, cleanup policy, and per-file provenance. All data comes from `AgentDiskViewModel`;
 /// this controller only renders and confirms actions.
-final class AgentDiskViewController: NSViewController, NSOutlineViewDataSource, NSOutlineViewDelegate, NSMenuDelegate {
+final class AgentDiskViewController: NSViewController, NSOutlineViewDataSource, NSOutlineViewDelegate, NSSplitViewDelegate, NSMenuDelegate {
     private let activity: ActivityViewModel
     private let viewModel: AgentDiskViewModel
     /// Called when the header summary or page notices change, so the content container can
@@ -13,6 +13,8 @@ final class AgentDiskViewController: NSViewController, NSOutlineViewDataSource, 
     private let outline = NSOutlineView()
     private lazy var scroll = ViewFactory.scrollingTable(outline)
     private let emptyState = EmptyStateView()
+    private let splitView = NSSplitView()
+    private let bottomPane = NSView()
     private let policyBar = NSStackView()
     private let policyContainer = NSStackView()
     private let statusRow = NSStackView()
@@ -40,6 +42,19 @@ final class AgentDiskViewController: NSViewController, NSOutlineViewDataSource, 
         button.isHidden = true
         return button
     }()
+    private lazy var toggleDetailButton: NSButton = {
+        let button = NSButton(title: "", target: self, action: #selector(toggleDetailPane(_:)))
+        button.bezelStyle = .toolbar
+        button.isBordered = false
+        button.controlSize = .small
+        button.symbolConfiguration = .init(pointSize: 13, weight: .regular)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.widthAnchor.constraint(equalToConstant: 24).isActive = true
+        button.heightAnchor.constraint(equalToConstant: 20).isActive = true
+        return button
+    }()
+    private var detailExpandedHeight: CGFloat = 190
+    private static let detailCollapsedKey = "Sidewatch.agentDisk.detailCollapsed"
     private lazy var helpButton: NSButton = {
         let button = NSButton(title: "", target: self, action: #selector(showHelp(_:)))
         button.bezelStyle = .helpButton
@@ -92,12 +107,13 @@ final class AgentDiskViewController: NSViewController, NSOutlineViewDataSource, 
         configurePolicyBar()
         configureStatus()
         configureDetail()
+        configureSplitView()
 
-        let separator = NSBox()
-        separator.boxType = .separator
-        separator.translatesAutoresizingMaskIntoConstraints = false
+        let statusTopRule = NSBox()
+        statusTopRule.boxType = .separator
+        statusTopRule.translatesAutoresizingMaskIntoConstraints = false
 
-        let stack = NSStackView(views: [policyContainer, scroll, separator, statusRow, detailScroll])
+        let stack = NSStackView(views: [policyContainer, splitView, statusTopRule, statusRow])
         stack.orientation = .vertical
         stack.spacing = 0
         stack.alignment = .leading
@@ -113,8 +129,7 @@ final class AgentDiskViewController: NSViewController, NSOutlineViewDataSource, 
             stack.leadingAnchor.constraint(equalTo: root.leadingAnchor),
             stack.trailingAnchor.constraint(equalTo: root.trailingAnchor),
             stack.bottomAnchor.constraint(equalTo: root.bottomAnchor),
-            scroll.heightAnchor.constraint(greaterThanOrEqualToConstant: 80),
-            detailScroll.heightAnchor.constraint(equalToConstant: 170),
+            splitView.heightAnchor.constraint(greaterThanOrEqualToConstant: 180),
             emptyState.leadingAnchor.constraint(equalTo: scroll.leadingAnchor),
             emptyState.trailingAnchor.constraint(equalTo: scroll.trailingAnchor),
             emptyState.topAnchor.constraint(equalTo: scroll.topAnchor),
@@ -123,8 +138,8 @@ final class AgentDiskViewController: NSViewController, NSOutlineViewDataSource, 
             scanSpinner.bottomAnchor.constraint(equalTo: emptyState.centerYAnchor, constant: -34)
         ])
         stack.pinArrangedWidths()
-        scroll.setContentHuggingPriority(.init(1), for: .vertical)
-        scroll.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+        splitView.setContentHuggingPriority(.init(1), for: .vertical)
+        splitView.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
         view = root
     }
 
@@ -162,7 +177,7 @@ final class AgentDiskViewController: NSViewController, NSOutlineViewDataSource, 
         let name = ViewFactory.column("name", title: String(localized: "Session / File"), width: 380, minWidth: 200)
         outline.addTableColumn(name)
         outline.outlineTableColumn = name
-        outline.addTableColumn(ViewFactory.column("size", title: String(localized: "Size"), width: 90, minWidth: 72))
+        outline.addTableColumn(ViewFactory.column("size", title: String(localized: "Size"), width: 90, minWidth: 72, alignment: .right))
         outline.addTableColumn(ViewFactory.column("status", title: String(localized: "Status"), width: 120, minWidth: 90))
         outline.addTableColumn(ViewFactory.column("activity", title: String(localized: "Last Activity"), width: 150, minWidth: 110))
         let menu = NSMenu()
@@ -179,7 +194,7 @@ final class AgentDiskViewController: NSViewController, NSOutlineViewDataSource, 
         idlePopup.target = self
         idlePopup.action = #selector(idleTimeoutChanged)
         idlePopup.setAccessibilityLabel(String(localized: "Idle timeout before automatic cleanup"))
-        idlePopup.toolTip = String(localized: "How long a session log can go without new activity before its files become eligible. Applies when Sidewatch hasn't seen the agent process exit.")
+        idlePopup.toolTip = String(localized: "Time without new log activity before files become eligible.")
 
         policyBar.orientation = .horizontal
         policyBar.spacing = 10
@@ -202,7 +217,7 @@ final class AgentDiskViewController: NSViewController, NSOutlineViewDataSource, 
         policyContainer.orientation = .vertical
         policyContainer.spacing = 6
         policyContainer.alignment = .leading
-        policyContainer.edgeInsets = NSEdgeInsets(top: 8, left: 12, bottom: 4, right: 12)
+        policyContainer.edgeInsets = NSEdgeInsets(top: 8, left: 20, bottom: 4, right: 20)
         policyContainer.detachesHiddenViews = true
         policyContainer.translatesAutoresizingMaskIntoConstraints = false
         policyContainer.addArrangedSubview(policyBar)
@@ -220,12 +235,89 @@ final class AgentDiskViewController: NSViewController, NSOutlineViewDataSource, 
         statusRow.orientation = .horizontal
         statusRow.spacing = 8
         statusRow.alignment = .centerY
-        statusRow.edgeInsets = NSEdgeInsets(top: 5, left: 12, bottom: 5, right: 12)
+        statusRow.edgeInsets = NSEdgeInsets(top: 5, left: 20, bottom: 5, right: 16)
         statusRow.translatesAutoresizingMaskIntoConstraints = false
         statusRow.addArrangedSubview(spinner)
         statusRow.addArrangedSubview(statusLabel)
         statusRow.addArrangedSubview(NSView())
         statusRow.addArrangedSubview(issuesButton)
+        statusRow.addArrangedSubview(toggleDetailButton)
+    }
+
+    private func configureSplitView() {
+        splitView.isVertical = false
+        splitView.dividerStyle = .thin
+        splitView.delegate = self
+        splitView.translatesAutoresizingMaskIntoConstraints = false
+        bottomPane.translatesAutoresizingMaskIntoConstraints = false
+        bottomPane.addSubview(detailScroll)
+        NSLayoutConstraint.activate([
+            detailScroll.topAnchor.constraint(equalTo: bottomPane.topAnchor),
+            detailScroll.leadingAnchor.constraint(equalTo: bottomPane.leadingAnchor),
+            detailScroll.trailingAnchor.constraint(equalTo: bottomPane.trailingAnchor),
+            detailScroll.bottomAnchor.constraint(equalTo: bottomPane.bottomAnchor)
+        ])
+        splitView.addArrangedSubview(scroll)
+        splitView.addArrangedSubview(bottomPane)
+        splitView.setHoldingPriority(.defaultLow, forSubviewAt: 0)
+        splitView.setHoldingPriority(.defaultHigh, forSubviewAt: 1)
+        let preferredHeight = bottomPane.heightAnchor.constraint(equalToConstant: detailExpandedHeight)
+        preferredHeight.priority = .defaultLow
+        preferredHeight.isActive = true
+        splitView.autosaveName = "Sidewatch.agentDisk.split"
+        if UserDefaults.standard.bool(forKey: Self.detailCollapsedKey) {
+            bottomPane.isHidden = true
+        }
+        updateToggleDetailButton()
+    }
+
+    func splitView(_ splitView: NSSplitView, canCollapseSubview subview: NSView) -> Bool {
+        subview === bottomPane
+    }
+
+    func splitView(_ splitView: NSSplitView, constrainMinCoordinate proposedMinimumPosition: CGFloat, ofSubviewAt dividerIndex: Int) -> CGFloat {
+        max(proposedMinimumPosition, 120)
+    }
+
+    func splitView(_ splitView: NSSplitView, constrainMaxCoordinate proposedMaximumPosition: CGFloat, ofSubviewAt dividerIndex: Int) -> CGFloat {
+        max(120, splitView.bounds.height - 110)
+    }
+
+    func splitViewDidResizeSubviews(_ notification: Notification) {
+        let collapsed = splitView.isSubviewCollapsed(bottomPane) || bottomPane.isHidden || bottomPane.frame.height < 1
+        if !collapsed, bottomPane.frame.height >= 110 {
+            detailExpandedHeight = bottomPane.frame.height
+        }
+        UserDefaults.standard.set(collapsed, forKey: Self.detailCollapsedKey)
+        updateToggleDetailButton()
+    }
+
+    @objc private func toggleDetailPane(_ sender: Any?) {
+        let collapsed = splitView.isSubviewCollapsed(bottomPane) || bottomPane.isHidden || bottomPane.frame.height < 1
+        let targetHeight = max(130, min(detailExpandedHeight, splitView.bounds.height - 120))
+        if !collapsed {
+            detailExpandedHeight = max(130, bottomPane.frame.height)
+            bottomPane.isHidden = true
+        } else {
+            bottomPane.isHidden = false
+        }
+        splitView.adjustSubviews()
+        if collapsed {
+            splitView.setPosition(splitView.bounds.height - targetHeight, ofDividerAt: 0)
+        }
+        UserDefaults.standard.set(!collapsed, forKey: Self.detailCollapsedKey)
+        updateToggleDetailButton()
+    }
+
+    private func updateToggleDetailButton() {
+        let collapsed = splitView.isSubviewCollapsed(bottomPane) || bottomPane.isHidden
+        toggleDetailButton.image = NSImage(
+            systemSymbolName: "rectangle.bottomthird.inset.filled",
+            accessibilityDescription: collapsed ? String(localized: "Show Details Area") : String(localized: "Hide Details Area")
+        )
+        toggleDetailButton.contentTintColor = collapsed ? .secondaryLabelColor : .controlAccentColor
+        toggleDetailButton.toolTip = collapsed ? String(localized: "Show the Details Area") : String(localized: "Hide the Details Area")
+        toggleDetailButton.setAccessibilityLabel(toggleDetailButton.toolTip)
     }
 
     private func configureDetail() {
@@ -238,7 +330,7 @@ final class AgentDiskViewController: NSViewController, NSOutlineViewDataSource, 
         detailStack.orientation = .vertical
         detailStack.alignment = .leading
         detailStack.spacing = 7
-        detailStack.edgeInsets = NSEdgeInsets(top: 10, left: 14, bottom: 12, right: 14)
+        detailStack.edgeInsets = NSEdgeInsets(top: 10, left: 20, bottom: 12, right: 20)
         detailStack.translatesAutoresizingMaskIntoConstraints = false
         detailDocument.translatesAutoresizingMaskIntoConstraints = false
         detailDocument.addSubview(detailStack)
@@ -295,7 +387,7 @@ final class AgentDiskViewController: NSViewController, NSOutlineViewDataSource, 
 
     @objc private func showHelp(_ sender: NSButton) {
         let text = ViewFactory.label(
-            String(localized: "A file becomes eligible when Sidewatch sees the agent process writing its session log exit and the session isn't resumed within the idle timeout (at most a day), or when that log has had no new activity for the idle timeout. Finishing a turn doesn't end a session, a file shared by several sessions waits for all of them, and a file a running process still has open waits until it's closed.\n\nSidewatch never deletes files marked Review. Automatic cleanup checks once a minute while Sidewatch is open."),
+            String(localized: "Files become eligible after the agent process exits (and isn't resumed), or after the session log stays idle for the timeout. Shared files wait for all sessions, and open files wait until closed.\n\nFiles marked Review are never deleted."),
             font: .systemFont(ofSize: NSFont.smallSystemFontSize + 1), wraps: true
         )
         text.preferredMaxLayoutWidth = 320
@@ -340,7 +432,7 @@ final class AgentDiskViewController: NSViewController, NSOutlineViewDataSource, 
         let alert = NSAlert()
         alert.alertStyle = .warning
         alert.messageText = String(localized: "Delete \(eligible.count) Eligible Files?")
-        alert.informativeText = String(localized: "Sidewatch rescans first, then deletes only these files and only if they haven't changed. This frees \(DisplayText.bytes(bytes)) and can't be undone.")
+        alert.informativeText = String(localized: "Frees \(DisplayText.bytes(bytes)). Sidewatch rescans first and skips any file that changed. This can't be undone.")
         alert.addButton(withTitle: String(localized: "Delete"))
         alert.addButton(withTitle: String(localized: "Cancel"))
         alert.buttons.first?.hasDestructiveAction = true
@@ -632,7 +724,7 @@ final class AgentDiskViewController: NSViewController, NSOutlineViewDataSource, 
                                                                weight: .semibold, monospaced: false)
             cell.setAccessibilityLabel(String(localized: "Session \(group.session.title), \(group.session.agent)"))
         case (.session(let group), "size"):
-            ViewFactory.configure(cell, text: DisplayText.bytes(group.bytes), numeric: true)
+            ViewFactory.configure(cell, text: DisplayText.bytes(group.bytes), numeric: true, alignment: .right)
         case (.session(let group), "status"):
             if group.eligibleCount > 0 {
                 ViewFactory.configure(cell, text: String(localized: "\(group.eligibleCount) eligible"),
@@ -651,7 +743,7 @@ final class AgentDiskViewController: NSViewController, NSOutlineViewDataSource, 
             cell.textField?.attributedStringValue = Self.title(name, detail: folder, weight: .regular, monospaced: true)
             cell.setAccessibilityLabel(item.path)
         case (.file(let item), "size"):
-            ViewFactory.configure(cell, text: DisplayText.bytes(item.bytes), color: .secondaryLabelColor, numeric: true)
+            ViewFactory.configure(cell, text: DisplayText.bytes(item.bytes), color: .secondaryLabelColor, numeric: true, alignment: .right)
         case (.file(let item), "status"):
             ViewFactory.configure(cell, text: DisplayText.agentDiskState(item.state),
                                   color: stateColor(item.state), symbol: "circle.fill",
@@ -861,7 +953,7 @@ final class AgentDiskViewController: NSViewController, NSOutlineViewDataSource, 
 
         if item.state == .review {
             detailStack.addArrangedSubview(ViewFactory.label(
-                String(localized: "Sidewatch won't delete this file. Clean Eligible and automatic cleanup both skip it."),
+                String(localized: "Skipped by Clean Eligible and automatic cleanup."),
                 font: .systemFont(ofSize: NSFont.smallSystemFontSize), color: .secondaryLabelColor, wraps: true
             ))
         }
@@ -905,6 +997,7 @@ final class AgentDiskViewController: NSViewController, NSOutlineViewDataSource, 
 
     private func addDetailRow(_ title: String, _ value: String, color: NSColor = .labelColor, monospaced: Bool = false) {
         let key = ViewFactory.label(title, font: .systemFont(ofSize: NSFont.smallSystemFontSize), color: .secondaryLabelColor)
+        key.alignment = .right
         key.setContentHuggingPriority(.required, for: .horizontal)
         key.widthAnchor.constraint(equalToConstant: 96).isActive = true
         let value = ViewFactory.label(value, font: monospaced
@@ -916,12 +1009,13 @@ final class AgentDiskViewController: NSViewController, NSOutlineViewDataSource, 
         let row = NSStackView(views: [key, value])
         row.orientation = .horizontal
         row.alignment = .firstBaseline
-        row.spacing = 8
+        row.spacing = 10
         detailStack.addArrangedSubview(row)
     }
 
     private func addProvenanceRow(_ title: String, path: String) {
         let key = ViewFactory.label(title, font: .systemFont(ofSize: NSFont.smallSystemFontSize), color: .secondaryLabelColor)
+        key.alignment = .right
         key.setContentHuggingPriority(.required, for: .horizontal)
         key.widthAnchor.constraint(equalToConstant: 96).isActive = true
         let pathLabel = ViewFactory.label(path, font: .monospacedSystemFont(ofSize: NSFont.smallSystemFontSize + 1, weight: .regular),
@@ -941,8 +1035,8 @@ final class AgentDiskViewController: NSViewController, NSOutlineViewDataSource, 
         button.setContentHuggingPriority(.required, for: .horizontal)
         let row = NSStackView(views: [key, pathLabel, button])
         row.orientation = .horizontal
-        row.alignment = .centerY
-        row.spacing = 8
+        row.alignment = .firstBaseline
+        row.spacing = 10
         detailStack.addArrangedSubview(row)
     }
 

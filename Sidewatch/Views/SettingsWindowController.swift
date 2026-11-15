@@ -77,13 +77,19 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate, NSW
         window.title = pane.title
         guard pane != current else { return }
         let previous = current.flatMap { panes[$0] }
+        let movingRight: Bool = {
+            guard let old = current,
+                  let oldIndex = SettingsPane.allCases.firstIndex(of: old),
+                  let newIndex = SettingsPane.allCases.firstIndex(of: pane) else { return true }
+            return newIndex > oldIndex
+        }()
         current = pane
         UserDefaults.standard.set(pane.rawValue, forKey: Self.paneKey)
 
-        previous?.view.removeFromSuperview()
-        previous?.paneDidDisappear()
         let view = controller.view
         view.translatesAutoresizingMaskIntoConstraints = false
+        view.wantsLayer = true
+        container.wantsLayer = true
         container.addSubview(view)
         NSLayoutConstraint.activate([
             view.topAnchor.constraint(equalTo: container.topAnchor),
@@ -92,15 +98,39 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate, NSW
         ])
         controller.paneWillAppear()
         let animate = animated && window.isVisible && !Motion.reduceMotion
-        if animate { view.alphaValue = 0 }
-        fitWindow(animated: animate)
-        if animate {
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = Motion.standard
-                context.timingFunction = Motion.easeOut
-                view.animator().alphaValue = 1
-            }
+        guard animate else {
+            previous?.view.removeFromSuperview()
+            previous?.paneDidDisappear()
+            view.alphaValue = 1
+            fitWindow(animated: false)
+            return
         }
+
+        // Cross-fade incoming and outgoing panes simultaneously while the window smoothly
+        // resizes to the new height, with a subtle horizontal directional drift.
+        view.alphaValue = 0
+        fitWindow(animated: true)
+        if let incomingLayer = view.layer {
+            let slide = CABasicAnimation(keyPath: "transform.translation.x")
+            slide.fromValue = movingRight ? 10 : -10
+            slide.toValue = 0
+            slide.duration = Motion.standard
+            slide.timingFunction = Motion.easeOut
+            incomingLayer.add(slide, forKey: "tabSlide")
+        }
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = Motion.standard
+            context.timingFunction = Motion.easeOut
+            view.animator().alphaValue = 1
+            previous?.view.animator().alphaValue = 0
+        }, completionHandler: { [weak self, weak previous] in
+            MainActor.assumeIsolated {
+                guard let previous, previous !== self?.current.flatMap({ self?.panes[$0] }) else { return }
+                previous.view.removeFromSuperview()
+                previous.view.alphaValue = 1
+                previous.paneDidDisappear()
+            }
+        })
     }
 
     /// Sizes the window to the current pane, keeping its top edge in place.
@@ -232,21 +262,21 @@ final class GeneralSettingsPane: SettingsPaneController {
 
         add(SettingsSection(title: String(localized: "Leftover Services"), rows: [
             SettingsRow(title: String(localized: "Notifications"),
-                        detail: String(localized: "Notify me when an agent exits while processes it started are still running."),
+                        detail: String(localized: "Notify when an agent exits with child processes still running."),
                         accessories: [notifications]),
             SettingsRow(title: String(localized: "Dock badge"),
-                        detail: String(localized: "Show the number of leftover processes on the Sidewatch icon."),
+                        detail: String(localized: "Show the leftover process count on the Dock icon."),
                         accessories: [badge])
-        ], footer: String(localized: "Leftovers are identified from recorded agent exits, so reminders need the monitor.")))
+        ], footer: String(localized: "Requires the monitor to detect agent exits.")))
 
         let rulesButton = ViewFactory.button(String(localized: "Open Protection Rules"), target: self, action: #selector(openRules))
         let notificationSettings = ViewFactory.button(String(localized: "Notification Settings…"), target: self, action: #selector(openNotificationSettings))
         add(SettingsSection(title: String(localized: "Shortcuts"), rows: [
             SettingsRow(title: String(localized: "Protection rules and mode"),
-                        detail: String(localized: "Choose Record Only, Dry Run, or Protect, and manage protected files and folders."),
+                        detail: String(localized: "Switch modes and manage protected paths."),
                         accessories: [rulesButton]),
             SettingsRow(title: String(localized: "System notifications"),
-                        detail: String(localized: "Change how Sidewatch alerts appear in macOS."),
+                        detail: String(localized: "Configure alert style in System Settings."),
                         accessories: [notificationSettings])
         ]))
 
@@ -412,25 +442,25 @@ final class MonitorSettingsPane: SettingsPaneController {
         let rows = [extensionRow.state, accessRow.state, serviceRow.state, collectionRow.state]
 
         if manager.operation == .uninstalling || viewModel.isRemovingMonitor {
-            (title, detail, symbol, color) = (String(localized: "Uninstalling…"), String(localized: "Waiting for macOS to remove the monitor extension."), "shield.slash", .systemGray)
+            (title, detail, symbol, color) = (String(localized: "Uninstalling…"), String(localized: "Removing the monitor extension."), "shield.slash", .systemGray)
         } else if manager.operation == .installing {
-            (title, detail, symbol, color) = (String(localized: "Installing…"), String(localized: "Waiting for macOS to install and approve the monitor extension."), "shield.lefthalf.filled", .systemBlue)
+            (title, detail, symbol, color) = (String(localized: "Installing…"), String(localized: "Waiting for macOS installation and approval."), "shield.lefthalf.filled", .systemBlue)
         } else if manager.availability == .notInstalled {
-            (title, detail, symbol, color) = (String(localized: "Monitor Not Installed"), String(localized: "Sidewatch shows current processes and ports. Install the monitor to record agent history and enforce protection rules."), "shield.slash", .systemGray)
+            (title, detail, symbol, color) = (String(localized: "Monitor Not Installed"), String(localized: "Install the monitor to record history and enforce protection rules."), "shield.slash", .systemGray)
         } else if manager.availability == .notEntitled {
-            (title, detail, symbol, color) = (String(localized: "Monitoring Unavailable"), String(localized: "This copy of Sidewatch isn't signed with the Endpoint Security entitlement."), "xmark.shield", .systemRed)
+            (title, detail, symbol, color) = (String(localized: "Monitoring Unavailable"), String(localized: "Missing Endpoint Security entitlement."), "xmark.shield", .systemRed)
         } else if manager.availability == .needsRestart {
-            (title, detail, symbol, color) = (String(localized: "Restart Required"), String(localized: "Restart your Mac to finish the change to the monitor extension."), "arrow.triangle.2.circlepath", .systemOrange)
+            (title, detail, symbol, color) = (String(localized: "Restart Required"), String(localized: "Restart your Mac to finish updating the extension."), "arrow.triangle.2.circlepath", .systemOrange)
         } else if rows.allSatisfy({ $0 == .ok }) {
             let mode = health?.activeMode.map(DisplayText.mode) ?? DisplayText.mode(.recordOnly)
-            (title, detail, symbol, color) = (String(localized: "Monitor Active"), String(localized: "Collecting activity for your account in \(mode) mode."), "checkmark.shield.fill", .systemGreen)
+            (title, detail, symbol, color) = (String(localized: "Monitor Active"), String(localized: "Collecting activity in \(mode) mode."), "checkmark.shield.fill", .systemGreen)
             live = true
         } else if checking && rows.contains(.working) {
-            (title, detail, symbol, color) = (String(localized: "Checking…"), String(localized: "Asking macOS and the monitor for their current state."), "shield.lefthalf.filled", .systemBlue)
+            (title, detail, symbol, color) = (String(localized: "Checking…"), String(localized: "Checking extension and service status."), "shield.lefthalf.filled", .systemBlue)
         } else if rows.contains(.error) {
-            (title, detail, symbol, color) = (String(localized: "Monitor Unavailable"), String(localized: "Resolve the problems below to record history and enforce rules."), "exclamationmark.shield.fill", .systemRed)
+            (title, detail, symbol, color) = (String(localized: "Monitor Unavailable"), String(localized: "Resolve the issues below to enable history and protection."), "exclamationmark.shield.fill", .systemRed)
         } else {
-            (title, detail, symbol, color) = (String(localized: "Needs Attention"), String(localized: "The monitor is installed but isn't collecting activity yet."), "exclamationmark.shield.fill", .systemOrange)
+            (title, detail, symbol, color) = (String(localized: "Needs Attention"), String(localized: "Installed, but not collecting activity yet."), "exclamationmark.shield.fill", .systemOrange)
         }
 
         var meta: [String] = []
@@ -643,7 +673,7 @@ final class DataSettingsPane: SettingsPaneController {
         retention.setRows([
             SettingsRow(title: String(localized: "Keep activity for"), accessories: [retentionPopup]),
             SettingsRow(title: String(localized: "Storage limit"),
-                        detail: String(localized: "The oldest activity is removed first when history grows past this size."),
+                        detail: String(localized: "Oldest events are pruned first when exceeded."),
                         accessories: [budgetPopup])
         ])
         add(retention)
@@ -654,10 +684,10 @@ final class DataSettingsPane: SettingsPaneController {
         eraseSpinner.isDisplayedWhenStopped = false
         add(SettingsSection(title: String(localized: "Clean Up"), rows: [
             SettingsRow(title: String(localized: "Clear history"),
-                        detail: String(localized: "Removes recorded activity and finished sessions. Rules, mode, and running services are kept."),
+                        detail: String(localized: "Removes past events and finished sessions. Keeps rules and active services."),
                         accessories: [clearButton]),
             SettingsRow(title: String(localized: "Erase all data"),
-                        detail: String(localized: "Removes all history, protection rules, and settings, and returns Sidewatch to its defaults."),
+                        detail: String(localized: "Removes all history, rules, and preferences."),
                         accessories: [eraseSpinner, eraseButton])
         ], footer: String(localized: "Removed data isn't securely overwritten on disk.")))
 
@@ -689,7 +719,7 @@ final class DataSettingsPane: SettingsPaneController {
         if let error = rules.lastError, connected {
             retention.setFooter(error, color: .systemRed)
         } else {
-            retention.setFooter(String(localized: "Old activity is removed hourly. Running services and the origins that explain them are always kept."))
+            retention.setFooter(String(localized: "Pruned hourly. Active services and their origins are always kept."))
         }
 
         let erasing = viewModel.isErasingData

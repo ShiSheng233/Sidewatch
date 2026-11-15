@@ -122,8 +122,6 @@ final class SettingsRow: NSView {
         text.spacing = 2
         text.detachesHiddenViews = true
         text.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        // The text column absorbs free width so accessories sit flush right.
-        text.setContentHuggingPriority(.init(1), for: .horizontal)
 
         accessories.spacing = 8
         accessories.alignment = .centerY
@@ -133,9 +131,12 @@ final class SettingsRow: NSView {
 
         var arranged: [NSView] = []
         if let leading { arranged.append(leading) }
-        arranged.append(contentsOf: [text, accessories])
+        let spacer = NSView()
+        spacer.setContentHuggingPriority(.init(1), for: .horizontal)
+        arranged.append(contentsOf: [text, spacer, accessories])
         let row = NSStackView(views: arranged)
         row.spacing = 12
+        row.setCustomSpacing(0, after: text)
         row.alignment = .centerY
         row.distribution = .fill
         row.edgeInsets = NSEdgeInsets(top: 10, left: 12, bottom: 10, right: 12)
@@ -146,6 +147,7 @@ final class SettingsRow: NSView {
             row.trailingAnchor.constraint(equalTo: trailingAnchor),
             row.topAnchor.constraint(equalTo: topAnchor),
             row.bottomAnchor.constraint(equalTo: bottomAnchor),
+            detailLabel.widthAnchor.constraint(lessThanOrEqualTo: text.widthAnchor),
             heightAnchor.constraint(greaterThanOrEqualToConstant: 44)
         ])
     }

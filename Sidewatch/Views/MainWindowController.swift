@@ -558,33 +558,41 @@ final class ContentContainerViewController: NSViewController {
         showPage()
     }
 
-    /// Dips the page out and back in, so two different tables are never visible at once.
+    /// Smoothly cross-fades between pages with a subtle vertical entrance instead of a two-step dip.
     private func showPage() {
         let page = viewModel.page
         guard page != shownPage else { return }
-        let first = shownPage == nil
+        let previous = shownPage
         shownPage = page
-        guard !first, !Motion.reduceMotion else {
+        guard let previous, !Motion.reduceMotion else {
             apply(page)
             return
         }
-        NSAnimationContext.runAnimationGroup({ context in
-            context.duration = 0.09
-            context.timingFunction = Motion.easeInOut
-            pageHost.animator().alphaValue = 0
-            summaryLabel.animator().alphaValue = 0
-        }, completionHandler: { [weak self] in
-            MainActor.assumeIsolated {
-                guard let self else { return }
-                self.apply(page)
-                NSAnimationContext.runAnimationGroup { context in
-                    context.duration = 0.2
-                    context.timingFunction = Motion.easeOut
-                    self.pageHost.animator().alphaValue = 1
-                    self.summaryLabel.animator().alphaValue = 1
-                }
-            }
-        })
+        let downward: Bool = {
+            guard let oldIndex = SidewatchPage.allCases.firstIndex(of: previous),
+                  let newIndex = SidewatchPage.allCases.firstIndex(of: page) else { return true }
+            return newIndex > oldIndex
+        }()
+        Motion.fade(titleLabel, duration: Motion.quick)
+        Motion.fade(summaryLabel, duration: Motion.quick)
+        Motion.fade(pageHost, duration: Motion.quick)
+        apply(page)
+        if let activeView = activePageView(for: page), let layer = activeView.layer ?? { activeView.wantsLayer = true; return activeView.layer }() {
+            let slide = CABasicAnimation(keyPath: "transform.translation.y")
+            slide.fromValue = downward ? -5 : 5
+            slide.toValue = 0
+            slide.duration = Motion.standard
+            slide.timingFunction = Motion.easeOut
+            layer.add(slide, forKey: "pageSlide")
+        }
+    }
+
+    private func activePageView(for page: SidewatchPage) -> NSView? {
+        switch page {
+        case .rules: ruleEditor.view
+        case .diskAudit: agentDisk.view
+        case .agents, .timeline, .ports, .leftovers: activityList.view
+        }
     }
 
     private func apply(_ page: SidewatchPage) {

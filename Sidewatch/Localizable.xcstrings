@@ -101,6 +101,9 @@
     "%@ on disk · nothing eligible" : {
       "comment" : "Disk audit space summary when no file is eligible"
     },
+    "%@ on disk." : {
+
+    },
     "%@, %lld items" : {
       "localizations" : {
         "en" : {
@@ -557,9 +560,6 @@
     "24 hours" : {
       "comment" : "Disk audit idle timeout"
     },
-    "A file becomes eligible when Sidewatch sees the agent process writing its session log exit, or when that log has had no new activity for the idle timeout. Finishing a turn doesn't end a session, and a file shared by several sessions waits for all of them.\n\nSidewatch never deletes files marked Review. Automatic cleanup checks once a minute while Sidewatch is open." : {
-      "comment" : "Disk audit cleanup help popover"
-    },
     "About %@" : {
 
     },
@@ -582,6 +582,7 @@
 
     },
     "Activity is kept for %lld days." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "variations" : {
@@ -603,6 +604,21 @@
         }
       }
     },
+    "Add" : {
+
+    },
+    "Add all custom session folders so active files aren't cleaned up early." : {
+
+    },
+    "Add custom CODEX_HOME, CLAUDE_CONFIG_DIR, or other session log folders." : {
+
+    },
+    "Add Folder…" : {
+
+    },
+    "Additional session folder" : {
+
+    },
     "Address" : {
 
     },
@@ -618,6 +634,9 @@
     "Agent Exited" : {
 
     },
+    "Agent exited; kept in case session resumes" : {
+      "comment" : "Disk audit reason"
+    },
     "Agent process exited" : {
       "comment" : "Disk audit reason"
     },
@@ -632,6 +651,9 @@
     },
     "Agent temporary files appear here after the first scan." : {
       "comment" : "Disk audit empty state"
+    },
+    "Agent:" : {
+
     },
     "Agents" : {
       "comment" : "Sidebar page"
@@ -677,6 +699,9 @@
     "All Agents" : {
 
     },
+    "All claiming sessions ended or timed out" : {
+      "comment" : "Disk audit reason"
+    },
     "All Events" : {
 
     },
@@ -687,9 +712,6 @@
 
     },
     "All recognized agents" : {
-
-    },
-    "All recorded activity, agent sessions, port history, and stop records are permanently removed. Your protection rules are deleted, the mode returns to Record Only, and retention and app preferences are reset. Processes running now stay tracked so attribution keeps working. This can't be undone." : {
 
     },
     "All Services" : {
@@ -707,19 +729,19 @@
     "Another monitor request is in progress." : {
 
     },
+    "Applies to recognized agents and their child processes. Blocks open, delete, and rename/move; file creation and writes are recorded only." : {
+
+    },
     "Applies to:" : {
 
     },
     "Approval needed" : {
 
     },
-    "Approve the Sidewatch monitor extension in System Settings. History and protection are inactive until it's approved." : {
+    "Approve the monitor extension in System Settings to enable history and protection." : {
 
     },
     "Approve…" : {
-
-    },
-    "Asking macOS and the monitor for their current state." : {
 
     },
     "Attribution" : {
@@ -767,6 +789,9 @@
         }
       }
     },
+    "Automatically includes default agent folders and visible environment variables (CODEX_HOME, CLAUDE_CONFIG_DIR, XDG_DATA_HOME, PI_CODING_AGENT_DIR)." : {
+
+    },
     "Available once the extension is enabled." : {
 
     },
@@ -786,9 +811,6 @@
 
     },
     "Cancel" : {
-
-    },
-    "Change how Sidewatch alerts appear in macOS." : {
 
     },
     "Change pending · %lld of %lld rules on" : {
@@ -823,10 +845,13 @@
         }
       }
     },
+    "Changed during cleanup" : {
+      "comment" : "Disk audit reason"
+    },
     "Changes Since Last Commit" : {
 
     },
-    "Chat titles and task contents aren't available from system events." : {
+    "Chat titles and prompts aren't visible to system events." : {
 
     },
     "Check Again" : {
@@ -842,6 +867,9 @@
 
     },
     "Checking" : {
+
+    },
+    "Checking extension and service status." : {
 
     },
     "Checking…" : {
@@ -862,11 +890,14 @@
     "Choose a folder to protect." : {
 
     },
-    "Choose Record Only, Dry Run, or Protect, and manage protected files and folders." : {
+    "Choose an agent's configuration folder or its session log folder." : {
 
     },
     "Choose…" : {
 
+    },
+    "Claude Code" : {
+      "comment" : "Agent provider"
     },
     "Clean eligible files automatically" : {
       "comment" : "Disk audit policy"
@@ -895,13 +926,19 @@
     "Clear History…" : {
 
     },
-    "Clearing history keeps running services, their origins, and your rules." : {
+    "Clearing history keeps running services and rules." : {
 
     },
     "Close Window" : {
 
     },
-    "Collecting activity for your account in %@ mode." : {
+    "Codex" : {
+      "comment" : "Agent provider"
+    },
+    "Collecting activity in %@ mode." : {
+
+    },
+    "Collecting in %@ mode." : {
 
     },
     "Collecting in %@ mode. %lld events were dropped." : {
@@ -937,9 +974,6 @@
         }
       }
     },
-    "Collecting in %@ mode." : {
-
-    },
     "Collection Gap" : {
       "comment" : "Activity kind"
     },
@@ -949,7 +983,13 @@
     "Command" : {
 
     },
+    "Configure alert style in System Settings." : {
+
+    },
     "Connect the monitor extension to choose a mode. Without it, no rule is evaluated or enforced." : {
+
+    },
+    "Connect the monitor to view history storage." : {
 
     },
     "Connect to the monitor service to change protection settings." : {
@@ -982,6 +1022,9 @@
     "Copy Project Path" : {
 
     },
+    "Couldn't be deleted" : {
+      "comment" : "Disk audit reason"
+    },
     "Couldn't Clear History" : {
 
     },
@@ -1012,10 +1055,10 @@
     "Create a rule to keep agents from opening, deleting, renaming, or moving important files and folders." : {
 
     },
-    "Current process scan" : {
+    "Current process only. Launch chain and file history require the monitor." : {
 
     },
-    "Current working copy compared with HEAD in %@. This may include edits by other tools or people and doesn't show which agent changed each line." : {
+    "Current process scan" : {
 
     },
     "Cut" : {
@@ -1104,6 +1147,9 @@
     "Details" : {
 
     },
+    "Diff truncated (too large)." : {
+
+    },
     "Disabled" : {
 
     },
@@ -1176,9 +1222,6 @@
     "Event queue overflow" : {
 
     },
-    "Every claiming session exited or reached the idle timeout" : {
-      "comment" : "Disk audit reason"
-    },
     "Evidence" : {
 
     },
@@ -1206,17 +1249,11 @@
     "File" : {
       "comment" : "Rule target"
     },
-    "File changed during cleanup" : {
-      "comment" : "Disk audit reason"
-    },
-    "File couldn't be deleted" : {
-      "comment" : "Disk audit reason"
-    },
-    "File has multiple hard links" : {
-      "comment" : "Disk audit reason"
-    },
     "Files" : {
       "comment" : "Disk audit session detail"
+    },
+    "Files become eligible after the agent process exits (and isn't resumed), or after the session log stays idle for the timeout. Shared files wait for all sessions, and open files wait until closed.\n\nFiles marked Review are never deleted." : {
+
     },
     "Filter by agent session" : {
 
@@ -1239,7 +1276,10 @@
     "Folder" : {
       "comment" : "Rule target"
     },
-    "Folder rules include everything inside the folder, but not folders with similar names. Unrecognized processes never match." : {
+    "Folder (never deleted)" : {
+      "comment" : "Disk audit reason"
+    },
+    "Folder rules cover all contents inside the folder. Unrecognized processes never match." : {
 
     },
     "For example, Production secrets" : {
@@ -1263,7 +1303,7 @@
     "Fork" : {
       "comment" : "Activity kind"
     },
-    "Found in the current process list. Without monitor history, its launch chain and file activity are unknown." : {
+    "Frees %@. Sidewatch rescans first and skips any file that changed. This can't be undone." : {
 
     },
     "From" : {
@@ -1275,16 +1315,19 @@
     "General" : {
 
     },
-    "Git couldn't produce a diff (status %lld)." : {
-
-    },
     "Git diff" : {
 
     },
-    "Git isn't available. Install the Command Line Tools to view diffs." : {
+    "Git diff failed (status %lld)." : {
+
+    },
+    "Git unavailable. Install Command Line Tools to view diffs." : {
 
     },
     "Grant Full Disk Access to the Sidewatch monitor so it can collect activity." : {
+
+    },
+    "Grant Full Disk Access to the Sidewatch monitor to collect activity." : {
 
     },
     "Granted." : {
@@ -1296,13 +1339,16 @@
     "Hide %@" : {
 
     },
+    "Hide Details Area" : {
+
+    },
     "Hide Others" : {
 
     },
-    "HISTORY" : {
+    "Hide the Details Area" : {
 
     },
-    "History is stored by the monitor extension and isn't available while it's disconnected." : {
+    "HISTORY" : {
 
     },
     "History is stored by the monitor. Connect it to see and change these settings." : {
@@ -1322,9 +1368,6 @@
     },
     "How cleanup works" : {
       "comment" : "Disk audit help button accessibility label"
-    },
-    "How long a session log can go without new activity before its files become eligible. Applies when Sidewatch hasn't seen the agent process exit." : {
-      "comment" : "Disk audit idle timeout tooltip"
     },
     "Idle timeout" : {
       "comment" : "Disk audit policy"
@@ -1360,13 +1403,16 @@
     "Inside a project folder" : {
       "comment" : "Disk audit reason"
     },
-    "Inside an agent session log folder" : {
+    "Inside a session log folder" : {
       "comment" : "Disk audit reason"
     },
     "Inspector" : {
 
     },
     "Install" : {
+
+    },
+    "Install the monitor to record history and enforce protection rules." : {
 
     },
     "Install…" : {
@@ -1385,6 +1431,9 @@
         }
       }
     },
+    "Installed, but not collecting activity yet." : {
+
+    },
     "Installing…" : {
 
     },
@@ -1392,6 +1441,9 @@
       "comment" : "Runtime"
     },
     "Keep activity for" : {
+
+    },
+    "Kept for %lld days." : {
 
     },
     "Kind" : {
@@ -1415,9 +1467,6 @@
     "Leftover services are identified from recorded agent exits, which requires the monitor extension." : {
 
     },
-    "Leftovers are identified from recorded agent exits, so reminders need the monitor." : {
-
-    },
     "Listening" : {
 
     },
@@ -1431,6 +1480,9 @@
 
     },
     "Location" : {
+
+    },
+    "Looking for session folders…" : {
 
     },
     "Looking for temporary files written by agent sessions." : {
@@ -1451,6 +1503,12 @@
     "Missed events" : {
 
     },
+    "Missing Endpoint Security entitlement." : {
+
+    },
+    "Missing Endpoint Security entitlement. Showing live processes and ports only." : {
+
+    },
     "Mode" : {
 
     },
@@ -1463,16 +1521,19 @@
     "Mode Pending" : {
 
     },
+    "Modified, not created by agent" : {
+      "comment" : "Disk audit reason"
+    },
     "Monitor" : {
 
     },
     "Monitor Active" : {
 
     },
-    "Monitor extension not installed" : {
+    "Monitor disconnected: only app preferences and window layout will be reset." : {
 
     },
-    "Monitor extension unavailable" : {
+    "Monitor not installed" : {
 
     },
     "Monitor Not Installed" : {
@@ -1487,6 +1548,9 @@
     "Monitor service" : {
 
     },
+    "Monitor unavailable" : {
+
+    },
     "Monitor Unavailable" : {
 
     },
@@ -1496,11 +1560,11 @@
     "Monitoring Unavailable" : {
 
     },
-    "More than one agent is related to this process. Sidewatch shows known relationships but can't detect every consumer of a service." : {
-
-    },
     "Move Sidewatch to the Applications folder to install the monitor extension." : {
 
+    },
+    "Multiple hard links" : {
+      "comment" : "Disk audit reason"
     },
     "Name" : {
 
@@ -1547,7 +1611,7 @@
     "No Agents" : {
 
     },
-    "No differences from the last commit." : {
+    "No differences from HEAD." : {
 
     },
     "No file activity recorded." : {
@@ -1604,6 +1668,9 @@
     "No Selection" : {
 
     },
+    "No session folders found" : {
+
+    },
     "No TCP listeners or UDP bindings were found for processes you can inspect." : {
 
     },
@@ -1619,7 +1686,13 @@
     "Not connected." : {
 
     },
+    "Not found" : {
+
+    },
     "Not granted. Turn on Sidewatch Monitor in Full Disk Access; collection starts automatically." : {
+
+    },
+    "Not in a Git repository." : {
 
     },
     "Not installed." : {
@@ -1640,7 +1713,7 @@
     "Notifications" : {
 
     },
-    "Notify me when an agent exits while processes it started are still running." : {
+    "Notify when an agent exits with child processes still running." : {
 
     },
     "Observed" : {
@@ -1649,14 +1722,17 @@
     "OK" : {
 
     },
-    "Old activity is removed hourly. Running services and the origins that explain them are always kept." : {
-
-    },
     "Oldest activity" : {
 
     },
-    "Oldest activity: %@." : {
+    "Oldest events are pruned first when exceeded." : {
 
+    },
+    "Oldest: %@." : {
+
+    },
+    "omp" : {
+      "comment" : "Agent provider"
     },
     "On" : {
 
@@ -1666,6 +1742,9 @@
     },
     "Open Full Disk Access" : {
 
+    },
+    "Open in a running process" : {
+      "comment" : "Disk audit reason"
     },
     "Open Protection Rules" : {
 
@@ -1694,7 +1773,7 @@
     "Path" : {
 
     },
-    "Path contains a symbolic link" : {
+    "Path contains a symlink" : {
       "comment" : "Disk audit reason"
     },
     "Path or Command" : {
@@ -1714,6 +1793,12 @@
     },
     "Permanently delete the eligible files shown in the list." : {
       "comment" : "Disk audit clean button tooltip"
+    },
+    "Permanently removes all history, sessions, rules, and preferences, and resets mode to Record Only. Active processes remain tracked. This can't be undone." : {
+
+    },
+    "pi" : {
+      "comment" : "Agent provider"
     },
     "PID" : {
 
@@ -1753,6 +1838,9 @@
     },
     "Project" : {
 
+    },
+    "Project folder unknown" : {
+      "comment" : "Disk audit reason"
     },
     "Project Path" : {
 
@@ -1799,6 +1887,9 @@
     "Provenance" : {
       "comment" : "Disk audit detail section"
     },
+    "Pruned hourly. Active services and their origins are always kept." : {
+
+    },
     "Python" : {
       "comment" : "Runtime"
     },
@@ -1823,9 +1914,6 @@
     "Recorded agent activity appears here." : {
 
     },
-    "Recorded file activity and finished history are removed. Running services and the origins needed to explain them are kept, and your rules and mode don't change. This is not secure erasure." : {
-
-    },
     "Records process and file activity. Rules aren't evaluated and nothing is blocked." : {
 
     },
@@ -1844,13 +1932,25 @@
     "Related Activity" : {
 
     },
+    "Related to multiple agents. Other processes may also use this service." : {
+
+    },
+    "Remove Folder" : {
+
+    },
     "Removed data isn't securely overwritten on disk." : {
 
     },
-    "Removes all history, protection rules, and settings, and returns Sidewatch to its defaults." : {
+    "Removes all history, rules, and preferences." : {
 
     },
-    "Removes recorded activity and finished sessions. Rules, mode, and running services are kept." : {
+    "Removes past events and finished sessions. Keeps rules and active services." : {
+
+    },
+    "Removes recorded events and finished sessions. Running services, rules, and mode are kept." : {
+
+    },
+    "Removing the monitor extension." : {
 
     },
     "Removing…" : {
@@ -1868,10 +1968,13 @@
     "Requirements" : {
 
     },
+    "Requires the monitor to detect agent exits." : {
+
+    },
     "Reset Preferences" : {
 
     },
-    "Resolve the problems below to record history and enforce rules." : {
+    "Resolve the issues below to enable history and protection." : {
 
     },
     "Response Failed" : {
@@ -1892,10 +1995,10 @@
     "Restart to Finish Uninstalling" : {
 
     },
-    "Restart your Mac to finish installing the Sidewatch monitor extension." : {
+    "Restart your Mac to finish installing the monitor extension." : {
 
     },
-    "Restart your Mac to finish the change to the monitor extension." : {
+    "Restart your Mac to finish updating the extension." : {
 
     },
     "Restart your Mac to finish." : {
@@ -1932,9 +2035,6 @@
 
     },
     "Rule target type" : {
-
-    },
-    "Rules can prevent opening, deleting, and renaming or moving matched items. Creating and writing files is recorded but can't be blocked. Rules apply only to recognized agents and the processes they start." : {
 
     },
     "Rules inactive: the monitor isn't connected." : {
@@ -1994,7 +2094,7 @@
     "Select All" : {
 
     },
-    "Select an agent, event, port, or service to see where it came from." : {
+    "Select an item to view its details." : {
 
     },
     "Select at least one agent, or choose all recognized agents." : {
@@ -2021,14 +2121,20 @@
     "Session %@, %@" : {
       "comment" : "Disk audit session row accessibility label: title, agent"
     },
-    "Session ended or timed out; waiting a few minutes" : {
+    "Session ended; in cooldown period" : {
       "comment" : "Disk audit reason"
     },
-    "Session hasn't ended or reached the idle timeout" : {
-      "comment" : "Disk audit reason"
+    "Session Folders" : {
+
+    },
+    "Session Folders…" : {
+
     },
     "Session ID" : {
       "comment" : "Disk audit session detail"
+    },
+    "Session idle timeout reached" : {
+      "comment" : "Disk audit reason"
     },
     "Session Log" : {
       "comment" : "Disk audit provenance"
@@ -2036,10 +2142,7 @@
     "Session log may be incomplete" : {
       "comment" : "Disk audit reason"
     },
-    "Session reached the idle timeout" : {
-      "comment" : "Disk audit reason"
-    },
-    "Session's project folder is unknown" : {
+    "Session still active or within idle timeout" : {
       "comment" : "Disk audit reason"
     },
     "Sessions" : {
@@ -2054,10 +2157,10 @@
     "Shared by more than one agent" : {
 
     },
-    "Shared, uncertain" : {
+    "Shared by multiple sessions. Make sure it's no longer needed before stopping." : {
 
     },
-    "Shared: this process is related to more than one agent session. Check that no one still needs it before stopping it." : {
+    "Shared, uncertain" : {
 
     },
     "Shortcuts" : {
@@ -2075,6 +2178,9 @@
     "Show All" : {
 
     },
+    "Show Details Area" : {
+
+    },
     "Show Git Diff" : {
 
     },
@@ -2087,17 +2193,17 @@
     "Show Session Log in Finder" : {
       "comment" : "Disk audit context menu"
     },
-    "Show the number of leftover processes on the Sidewatch icon." : {
+    "Show the Details Area" : {
 
     },
-    "Showing current processes and ports only. History and protection stay off until it's installed." : {
+    "Show the leftover process count on the Dock icon." : {
+
+    },
+    "Showing live processes and ports only. Install to enable history and rules." : {
 
     },
     "Sidewatch" : {
 
-    },
-    "Sidewatch doesn't delete folders" : {
-      "comment" : "Disk audit reason"
     },
     "Sidewatch found no temporary files written by agent sessions." : {
       "comment" : "Disk audit empty state"
@@ -2105,17 +2211,8 @@
     "Sidewatch immediately ends this exact process (SIGKILL). Unsaved work in that process will be lost." : {
 
     },
-    "Sidewatch rescans first, then deletes only these files and only if they haven't changed. This frees %@ and can't be undone." : {
-      "comment" : "Disk audit cleanup confirmation"
-    },
     "Sidewatch sends a termination request (SIGTERM) to this exact process only. It may take time to exit or may ignore the request." : {
 
-    },
-    "Sidewatch shows current processes and ports. Install the monitor to record agent history and enforce protection rules." : {
-
-    },
-    "Sidewatch won't delete this file. Clean Eligible and automatic cleanup both skip it." : {
-      "comment" : "Disk audit detail note for review-only files"
     },
     "Signing ID" : {
 
@@ -2124,6 +2221,9 @@
       "comment" : "Disk audit table column"
     },
     "Size on disk" : {
+
+    },
+    "Skipped by Clean Eligible and automatic cleanup." : {
 
     },
     "Snapshot" : {
@@ -2165,16 +2265,19 @@
     "Stopping a process requires the monitor service connection." : {
 
     },
-    "Stopping requires the monitor extension's live identity for this exact process. It can still be inspected." : {
+    "Stopping requires the monitor's live identity for this process." : {
 
     },
-    "Stopping requires the monitor's live identity for this process." : {
+    "Stopping requires the monitor's live process identity." : {
 
     },
     "Storage failure" : {
 
     },
     "Storage limit" : {
+
+    },
+    "Switch modes and manage protected paths." : {
 
     },
     "System extension" : {
@@ -2201,12 +2304,6 @@
     "The activity history changed. Reload the history and try again." : {
 
     },
-    "The agent edited this file but may not have created it" : {
-      "comment" : "Disk audit reason"
-    },
-    "The diff is too large and was truncated." : {
-
-    },
     "The Item No Longer Exists" : {
 
     },
@@ -2231,9 +2328,6 @@
     "The monitor is already being removed." : {
 
     },
-    "The monitor is installed but isn't collecting activity yet." : {
-
-    },
     "The monitor is missing the Endpoint Security entitlement." : {
 
     },
@@ -2241,9 +2335,6 @@
 
     },
     "The monitor isn't collecting activity, so protection settings can't be applied." : {
-
-    },
-    "The monitor isn't connected, so its recorded history and rules can't be erased now. Only this app's preferences and window layout will be reset." : {
 
     },
     "The monitor request was canceled." : {
@@ -2268,9 +2359,6 @@
 
     },
     "The name or path contains an invalid character." : {
-
-    },
-    "The oldest activity is removed first when history grows past this size." : {
 
     },
     "The operation couldn't be completed." : {
@@ -2333,18 +2421,6 @@
     "The timeline requires a connection to the monitor extension." : {
 
     },
-    "This copy of Sidewatch isn't signed with the Endpoint Security entitlement." : {
-
-    },
-    "This copy of Sidewatch isn't signed with the Endpoint Security entitlement. Showing current processes and ports only." : {
-
-    },
-    "This file has no committed version, so there's nothing to compare it with." : {
-
-    },
-    "This file isn't in a Git repository, so no diff is available." : {
-
-    },
     "This process can't be signaled." : {
 
     },
@@ -2354,10 +2430,13 @@
     "Time" : {
 
     },
+    "Time without new log activity before files become eligible." : {
+
+    },
     "Timeline" : {
       "comment" : "Sidebar page"
     },
-    "Timestamps don't match the agent's recorded writes" : {
+    "Timestamps don't match recorded writes" : {
       "comment" : "Disk audit reason"
     },
     "To" : {
@@ -2390,7 +2469,7 @@
     "Uncertain" : {
 
     },
-    "Uncertain: part of this attribution is inferred rather than directly observed." : {
+    "Uncertain: attribution is partially inferred." : {
 
     },
     "Undo" : {
@@ -2429,6 +2508,9 @@
     "Unsupported file type" : {
       "comment" : "Disk audit reason"
     },
+    "Untracked or uncommitted file." : {
+
+    },
     "Update" : {
 
     },
@@ -2441,9 +2523,6 @@
           }
         }
       }
-    },
-    "Using %@ on disk." : {
-
     },
     "Version %@ (%@)" : {
       "localizations" : {
@@ -2464,10 +2543,7 @@
     "Waiting for Full Disk Access." : {
 
     },
-    "Waiting for macOS to install and approve the monitor extension." : {
-
-    },
-    "Waiting for macOS to remove the monitor extension." : {
+    "Waiting for macOS installation and approval." : {
 
     },
     "Waiting for the monitor to confirm these settings. The rule isn't active yet." : {
@@ -2480,6 +2556,9 @@
 
     },
     "Window" : {
+
+    },
+    "Working copy vs. HEAD in %@. May include edits from other tools." : {
 
     },
     "Working Directory" : {

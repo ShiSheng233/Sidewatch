@@ -79,7 +79,7 @@ final class ActivityViewController: NSViewController, NSTableViewDataSource, NST
 
         filterBar.orientation = .horizontal
         filterBar.spacing = 8
-        filterBar.edgeInsets = NSEdgeInsets(top: 8, left: 12, bottom: 4, right: 12)
+        filterBar.edgeInsets = NSEdgeInsets(top: 8, left: 20, bottom: 4, right: 20)
         filterBar.translatesAutoresizingMaskIntoConstraints = false
         for (popup, label) in [
             (sessionPopup, String(localized: "Filter by agent session")),
@@ -108,13 +108,13 @@ final class ActivityViewController: NSViewController, NSTableViewDataSource, NST
         portScopeControl.action = #selector(portScopeChanged)
         portScopeControl.setAccessibilityLabel(String(localized: "Which services to show"))
         portBar.orientation = .horizontal
-        portBar.edgeInsets = NSEdgeInsets(top: 8, left: 12, bottom: 4, right: 12)
+        portBar.edgeInsets = NSEdgeInsets(top: 8, left: 20, bottom: 4, right: 20)
         portBar.addArrangedSubview(portScopeControl)
         portBar.addArrangedSubview(NSView())
 
         footer.orientation = .horizontal
         footer.spacing = 8
-        footer.edgeInsets = NSEdgeInsets(top: 4, left: 12, bottom: 6, right: 12)
+        footer.edgeInsets = NSEdgeInsets(top: 4, left: 20, bottom: 6, right: 20)
         footer.translatesAutoresizingMaskIntoConstraints = false
         loadMoreButton.controlSize = .small
         footer.addArrangedSubview(footerLabel)
@@ -190,8 +190,8 @@ final class ActivityViewController: NSViewController, NSTableViewDataSource, NST
                 ViewFactory.column("state", title: String(localized: "State"), width: 90),
                 ViewFactory.column("started", title: String(localized: "Started"), width: 120),
                 ViewFactory.column("ended", title: String(localized: "Ended"), width: 120),
-                ViewFactory.column("descendants", title: String(localized: "Processes"), width: 80),
-                ViewFactory.column("services", title: String(localized: "Listening"), width: 80),
+                ViewFactory.column("descendants", title: String(localized: "Processes"), width: 80, alignment: .right),
+                ViewFactory.column("services", title: String(localized: "Listening"), width: 80, alignment: .right),
                 ViewFactory.column("evidence", title: String(localized: "Evidence"), width: 90)
             ]
         case .timeline:
@@ -207,8 +207,8 @@ final class ActivityViewController: NSViewController, NSTableViewDataSource, NST
             return [
                 ViewFactory.column("protocol", title: String(localized: "Protocol"), width: 80, minWidth: 72),
                 ViewFactory.column("address", title: String(localized: "Address"), width: 130),
-                ViewFactory.column("port", title: String(localized: "Port"), width: 64),
-                ViewFactory.column("pid", title: String(localized: "PID"), width: 64, minWidth: 52),
+                ViewFactory.column("port", title: String(localized: "Port"), width: 64, alignment: .right),
+                ViewFactory.column("pid", title: String(localized: "PID"), width: 64, minWidth: 52, alignment: .right),
                 ViewFactory.column("command", title: String(localized: "Command"), width: 260),
                 ViewFactory.column("project", title: String(localized: "Project"), width: 120),
                 ViewFactory.column("runtime", title: String(localized: "Runtime"), width: 80),
@@ -217,7 +217,7 @@ final class ActivityViewController: NSViewController, NSTableViewDataSource, NST
         case .leftovers:
             return [
                 ViewFactory.column("process", title: String(localized: "Process"), width: 120),
-                ViewFactory.column("pid", title: String(localized: "PID"), width: 64, minWidth: 52),
+                ViewFactory.column("pid", title: String(localized: "PID"), width: 64, minWidth: 52, alignment: .right),
                 ViewFactory.column("ports", title: String(localized: "Ports"), width: 90),
                 ViewFactory.column("attribution", title: String(localized: "Agent"), width: 130),
                 ViewFactory.column("ended", title: String(localized: "Agent Exited"), width: 120),
@@ -481,9 +481,10 @@ final class ActivityViewController: NSViewController, NSTableViewDataSource, NST
             ViewFactory.configure(cell, text: row.endedAt.map(DisplayText.dateTime) ?? "—", color: row.endedAt == nil ? .tertiaryLabelColor : .secondaryLabelColor, numeric: true)
         case "descendants":
             ViewFactory.configure(cell, text: row.descendantCount.formatted(), color: row.descendantCount == 0 ? .tertiaryLabelColor : .labelColor,
-                                  numeric: true, tooltip: String(localized: "\(row.runningDescendantCount) running"))
+                                  numeric: true, alignment: .right, tooltip: String(localized: "\(row.runningDescendantCount) running"))
         case "services":
-            ViewFactory.configure(cell, text: row.endpointCount.formatted(), color: row.endpointCount == 0 ? .tertiaryLabelColor : .labelColor, numeric: true)
+            ViewFactory.configure(cell, text: row.endpointCount.formatted(), color: row.endpointCount == 0 ? .tertiaryLabelColor : .labelColor,
+                                  numeric: true, alignment: .right)
         case "evidence":
             ViewFactory.configure(cell, text: DisplayText.evidence(row.evidence), color: .tertiaryLabelColor)
         default:
@@ -535,9 +536,9 @@ final class ActivityViewController: NSViewController, NSTableViewDataSource, NST
         case "address":
             ViewFactory.configure(cell, text: DisplayText.address(row.endpoint), monospaced: true)
         case "port":
-            ViewFactory.configure(cell, text: String(row.endpoint.port), numeric: true)
+            ViewFactory.configure(cell, text: String(row.endpoint.port), numeric: true, alignment: .right)
         case "pid":
-            ViewFactory.configure(cell, text: String(row.endpoint.execution.process.pid), color: .secondaryLabelColor, numeric: true)
+            ViewFactory.configure(cell, text: String(row.endpoint.execution.process.pid), color: .secondaryLabelColor, numeric: true, alignment: .right)
         case "command":
             ViewFactory.configure(cell, text: row.execution.map(DisplayText.commandSummary) ?? String(localized: "Unavailable"), color: row.execution == nil ? .secondaryLabelColor : .labelColor, monospaced: true, tooltip: row.execution?.command)
         case "project":
@@ -564,7 +565,7 @@ final class ActivityViewController: NSViewController, NSTableViewDataSource, NST
         case "process":
             ViewFactory.configure(cell, text: DisplayText.executableName(row.execution))
         case "pid":
-            ViewFactory.configure(cell, text: String(row.execution.identity.process.pid), color: .secondaryLabelColor, numeric: true)
+            ViewFactory.configure(cell, text: String(row.execution.identity.process.pid), color: .secondaryLabelColor, numeric: true, alignment: .right)
         case "ports":
             let ports = row.endpoints.map { String($0.port) }
             ViewFactory.configure(cell, text: ports.isEmpty ? "—" : ports.formatted(.list(type: .and)), color: ports.isEmpty ? .tertiaryLabelColor : .labelColor, numeric: true)
