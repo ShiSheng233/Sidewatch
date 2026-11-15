@@ -10,7 +10,7 @@ The deferred backend test run and host/system-extension build were later execute
 
 | Check | Result |
 | --- | --- |
-| `SidewatchTests` (command below) | 121 tests, 0 failures, 0 skipped, including the host projection and Git diff tests added with the UI. |
+| `SidewatchTests` (command below) | 178 tests, 0 failures, 0 skipped, including host projection, Git diff, Agent Disk, incremental log parsing, and graph-delta tests. |
 | `Sidewatch` scheme, unsigned | Builds; `dev.shisheng.Sidewatch.Monitor.systemextension` is embedded under `Contents/Library/SystemExtensions`, its Info.plist declares `NSEndpointSecurityMachServiceName` `dev.shisheng.Sidewatch.Monitor`, and the extension links `libEndpointSecurity`, `libbsm`, and system `libsqlite3`. |
 
 Fixes found by that run:
@@ -124,6 +124,18 @@ These remain unverified:
 - Multi-user provenance confinement, privilege changes, fresh-token refusal on stale execution/ownership, and the installed XPC-to-signal-to-audit path.
 - Clear/retention concurrent with live callbacks, preservation of new work and live ancestry, and absence of resurrected completed history after reconnect/restart.
 - Runtime Unified Logging output; source diagnostics are limited to operational information and must never include activity payloads, paths, commands, matches, tokens, or SQL arguments.
+
+## Event volume
+
+The single ES client keeps fork/exec/exit, file notifications, and AUTH in one ordered stream, so an AUTH from a just-executed child always sees its provenance. To keep that stream short:
+
+- NOTIFY_WRITE is not subscribed; a modifying NOTIFY_CLOSE records each changed file once.
+- The monitor mutes its own process, and mutes NOTIFY_OPEN/NOTIFY_CLOSE for targets under `/dev/`. AUTH events are never muted by path.
+- A file notification from an execution that is already indexed, needs no state refresh, and isn't related to any user's agent only advances the sequence check; its paths are never copied.
+
+Ingestion persists graph deltas: rows that changed since the last commit, plus children of newly added executions and edges/associations touching a changed row. The engine graph is copied only when it changed or an activity names an execution not yet committed. After a failure, a clear, or retention, the next batch rewrites the whole graph. Snapshot placeholders are closed against the complete engine graph, never the delta.
+
+Splitting AUTH onto its own client would remove the remaining head-of-line blocking, but per-client ordering means an AUTH could then be decided before the fork/exec that establishes the process's provenance. That needs the AUTH client to also own process lifecycle events and is deferred until it can be verified on a signed installation.
 
 ES messages do not provide argv for every process metadata observation. A node/bun script Agent first seen through file activity can remain unidentified until native polling or restored metadata supplies its arguments. Chat titles/task contents and file contents are not provided by this backend API.
 

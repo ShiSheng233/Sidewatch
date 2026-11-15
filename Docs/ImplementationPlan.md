@@ -88,7 +88,7 @@ These paths define the implementation targets. New source files did not exist at
 
 ## Current execution checkpoint
 
-Steps 1–6 are implemented. The deferred backend suite and the host/extension build now run: `SidewatchTests` passes 121/121 (98 backend, 23 host projection/Git diff), and the unsigned Sidewatch scheme builds with the extension embedded. See [BackendHandover.md](BackendHandover.md) for fixes found by that run.
+Steps 1–6 are implemented. The deferred backend suite and the host/extension build now run: `SidewatchTests` passes 178/178, and the unsigned Sidewatch scheme builds with the extension embedded. See [BackendHandover.md](BackendHandover.md) for fixes found by that run.
 
 The AppKit host runs against real native process/port data. Its pages were captured in light, dark, and doubled-string pseudolocalization using the DEBUG snapshot hook described in the README. Timeline, leftover, rule-editing, and Stop/Force Quit paths are implemented against the XPC API but have not run against an installed, entitled extension. Step 7 (independent review, Plannotator submission, authorized runtime acceptance) remains open, so the overall goal is not complete.
 

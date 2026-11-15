@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Agent Disk: an observed agent exit now waits for the idle timeout (at most 24 hours) before files become eligible, so resuming a session keeps its scratch files. Files any running process still has open, and files no earlier scan saw unchanged, are never deleted.
+- Agent Disk: added Settings → Agent Disk, which lists every session folder searched and lets you add folders the app can't discover (for example `CLAUDE_CONFIG_DIR` set only in a shell profile).
+- Agent Disk: logs are parsed incrementally, the parse cache drops logs that disappeared, scans run on their own queue, and cancelling stops a scan mid-log.
+- The monitor persists graph deltas instead of the whole in-memory graph on every batch, and copies the engine graph only when it changed. Removed a redundant activities index from `v1_initial`.
+- The monitor no longer subscribes to NOTIFY_WRITE, mutes its own process and `/dev/` open/close noise, and skips unrelated file notifications without copying their paths.
+- The host reads the monitor snapshot only when history changed (or every 30 seconds), throttles commit refreshes instead of debouncing them so the timeline updates during sustained activity, and ignores late catch-up replies for a replaced timeline.
+- The inspector no longer rebuilds on every refresh, keeping the diff's scroll position and keyboard/VoiceOver focus; Git diff lines are tinted.
+- Tables reload only changed rows on refresh; timeline filter menus are rebuilt only when their choices change and list the 100 most recent sessions.
+- Closing the main window keeps Sidewatch running, and announced leftovers are remembered across launches.
+- An older Sidewatch no longer replaces a newer installed monitor. The monitor caps concurrent requests per connection.
+- Added plural variants for day/hour counts and dropped-event status.
+
 - Added Agent Disk for agent session JSONL, account/profile discovery, artifact disk usage and provenance, manual eligible cleanup, and opt-in scheduled cleanup after an observed log-writer process exits or an inactivity timeout. Cleanup validates temporary-file ownership, creation evidence, project exclusions, and filesystem identity; uncertain artifacts and directories remain for review.
 - Changing Agent Disk's idle timeout cancels an in-flight automatic cleanup and rescans, so a scan captured under a shorter timeout can't delete files after the timeout is extended.
 - Added shared process/execution identities, Agent provenance, project recognition, configurable protection rules, and per-user GRDB history using one complete `v1_initial` schema.
