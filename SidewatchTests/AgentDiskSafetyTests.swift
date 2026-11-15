@@ -83,7 +83,83 @@ final class AgentDiskSafetyTests: XCTestCase {
             AgentDiskAuditService(home: home, temporaryRoots: [temporary])
         }
 
+        /// A read-only scan the user "reviews", then cleanup, as the app does.
+        func reviewedCleanup(policy: AgentDiskPolicy = .init()) async -> AgentDiskReport {
+            let service = service()
+            _ = await service.audit(policy: policy, now: expiredAt)
+            return await service.audit(policy: policy, cleanup: true, now: expiredAt)
+        }
+
         func remove() { try? FileManager.default.removeItem(at: root) }
+    }
+
+    func testArtifactNotSeenByAnEarlierScanIsNotDeleted() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        let path = try fixture.file("first-sighting.txt")
+        try fixture.session("expired", paths: [path])
+        let service = fixture.service()
+        let first = await service.audit(policy: .init(), cleanup: true, now: fixture.expiredAt)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: path.path))
+        XCTAssertEqual(first.removedCount, 0)
+        XCTAssertEqual(first.items.first(where: { $0.path == path.path })?.state, .eligible)
+        let second = await service.audit(policy: .init(), cleanup: true, now: fixture.expiredAt)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: path.path))
+        XCTAssertEqual(second.removedCount, 1)
+    }
+
+    func testFileOpenInARunningProcessIsKept() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        let path = try fixture.file("server.js")
+        try fixture.session("expired", paths: [path])
+        let handle = try FileHandle(forReadingFrom: path)
+        let report = await fixture.reviewedCleanup()
+        let item = try XCTUnwrap(report.items.first { $0.path == path.path })
+        XCTAssertTrue(FileManager.default.fileExists(atPath: path.path))
+        XCTAssertEqual(report.removedCount, 0)
+        XCTAssertEqual(item.state, .waiting)
+        XCTAssertEqual(item.reason, "waiting.file-open")
+        try handle.close()
+        let after = await fixture.reviewedCleanup()
+        XCTAssertFalse(FileManager.default.fileExists(atPath: path.path))
+        XCTAssertEqual(after.removedCount, 1)
+    }
+
+    func testFileReplacedBetweenScansIsKept() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        let path = try fixture.file("swapped.txt")
+        try fixture.session("expired", paths: [path])
+        let service = fixture.service()
+        _ = await service.audit(policy: .init(), now: fixture.expiredAt)
+        // Same name and size, new inode: a different file now sits at the reviewed path.
+        try FileManager.default.removeItem(at: path)
+        try Data(repeating: 0x61, count: 16_384).write(to: path)
+        let report = await service.audit(policy: .init(), cleanup: true, now: fixture.expiredAt)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: path.path))
+        XCTAssertEqual(report.removedCount, 0)
+    }
+
+    func testCustomSessionFolderIsScanned() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        let path = try fixture.file("custom.txt")
+        // The log lives where no default discovery looks.
+        let log = try fixture.session("custom", paths: [path])
+        let custom = fixture.root.appendingPathComponent("elsewhere/agent/sessions", isDirectory: true)
+        try FileManager.default.createDirectory(at: custom, withIntermediateDirectories: true)
+        try FileManager.default.moveItem(at: log, to: custom.appendingPathComponent(log.lastPathComponent))
+
+        let service = fixture.service()
+        let unseen = await service.audit(policy: .init(), now: fixture.expiredAt)
+        XCTAssertNil(unseen.items.first { $0.path == path.path })
+
+        var policy = AgentDiskPolicy()
+        policy.sessionFolders = [AgentSessionFolder(provider: "omp", path: fixture.root.appendingPathComponent("elsewhere").path)]
+        let report = await service.audit(policy: policy, now: fixture.expiredAt)
+        XCTAssertEqual(report.items.first { $0.path == path.path }?.state, .eligible)
+        XCTAssertTrue(report.sessionRoots.contains { $0.isCustom && $0.exists && $0.path == custom.path })
     }
 
     func testCancelledCleanupPreservesEligibleArtifacts() async throws {
@@ -120,7 +196,7 @@ final class AgentDiskSafetyTests: XCTestCase {
         defer { fixture.remove() }
         let path = try fixture.file("temporary-cwd.txt")
         try fixture.session("temporary-work", paths: [path], cwd: fixture.temporary)
-        let report = await fixture.service().audit(policy: .init(), cleanup: true, now: fixture.expiredAt)
+        let report = await fixture.reviewedCleanup()
         XCTAssertFalse(FileManager.default.fileExists(atPath: path.path))
         XCTAssertEqual(report.removedCount, 1)
     }
@@ -155,7 +231,7 @@ final class AgentDiskSafetyTests: XCTestCase {
         let path = try fixture.file("created-and-edited.txt")
         try fixture.session("creator", paths: [path])
         try fixture.session("editor", paths: [path], tool: "edit")
-        let report = await fixture.service().audit(policy: .init(), cleanup: true, now: fixture.expiredAt)
+        let report = await fixture.reviewedCleanup()
         XCTAssertFalse(FileManager.default.fileExists(atPath: path.path))
         XCTAssertEqual(report.removedCount, 1)
     }
@@ -166,7 +242,7 @@ final class AgentDiskSafetyTests: XCTestCase {
         let path = try fixture.file("shell output.txt")
         let command = "cat <<'EOF' > '\(path.path)'\ndisposable content\nEOF\n"
         try fixture.session("shell", paths: [path], tool: "bash", command: command)
-        let report = await fixture.service().audit(policy: .init(), cleanup: true, now: fixture.expiredAt)
+        let report = await fixture.reviewedCleanup()
         XCTAssertFalse(FileManager.default.fileExists(atPath: path.path))
         XCTAssertEqual(report.removedCount, 1)
     }
@@ -192,6 +268,7 @@ final class AgentDiskSafetyTests: XCTestCase {
         let unreviewed = try fixture.file("unreviewed.txt")
         try fixture.session("expired", paths: [reviewed, unreviewed])
         let service = fixture.service()
+        _ = await service.audit(policy: .init(), now: fixture.expiredAt)
         let report = await service.audit(policy: .init(), cleanup: true, now: fixture.expiredAt,
                                          allowedPaths: [reviewed.path])
         XCTAssertFalse(FileManager.default.fileExists(atPath: reviewed.path))

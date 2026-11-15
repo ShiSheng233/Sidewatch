@@ -50,6 +50,11 @@ typedef void (*SWSessionWriterCallback)(const SWProcessIdentity *identity,
  * A missing descriptor is never evidence that a process exited. */
 int32_t sw_probe_session_writers(SWSessionWriterCallback writer, void *context);
 
+typedef void (*SWOpenFileCallback)(uint64_t device, uint64_t inode, void *context);
+/* (device, inode) of every vnode descriptor open in a current-user process. Files open
+ * only in other users' processes, or only memory-mapped, are not reported. */
+int32_t sw_probe_open_files(SWOpenFileCallback file, void *context);
+
 /* Synchronous callbacks; all callback pointers are borrowed until callback return. */
 int32_t sw_probe_capture(SWProcessCallback process, SWEndpointCallback endpoint,
                          SWIssueCallback issue, void *context);

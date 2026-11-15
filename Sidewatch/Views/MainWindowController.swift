@@ -18,11 +18,11 @@ final class MainWindowController: NSWindowController, NSToolbarDelegate, NSSearc
     private static let refreshItem = NSToolbarItem.Identifier("Sidewatch.refresh")
     private static let searchIdentifier = NSToolbarItem.Identifier("Sidewatch.search")
 
-    init(viewModel: ActivityViewModel, rules: RuleViewModel) {
+    init(viewModel: ActivityViewModel, rules: RuleViewModel, disk: AgentDiskViewModel) {
         self.viewModel = viewModel
         self.rules = rules
         sidebar = SidebarViewController(viewModel: viewModel, rules: rules)
-        content = ContentContainerViewController(viewModel: viewModel, rules: rules)
+        content = ContentContainerViewController(viewModel: viewModel, rules: rules, disk: disk)
         inspector = InspectorViewController(viewModel: viewModel, rules: rules)
 
         let window = NSWindow(
@@ -478,12 +478,12 @@ final class ContentContainerViewController: NSViewController {
     private let pageHost = NSView()
     private var shownPage: SidewatchPage?
 
-    init(viewModel: ActivityViewModel, rules: RuleViewModel) {
+    init(viewModel: ActivityViewModel, rules: RuleViewModel, disk: AgentDiskViewModel) {
         self.viewModel = viewModel
         self.rules = rules
         activityList = ActivityViewController(viewModel: viewModel)
         ruleEditor = RuleEditorViewController(viewModel: viewModel, rules: rules)
-        agentDisk = AgentDiskViewController(activity: viewModel, viewModel: AgentDiskViewModel())
+        agentDisk = AgentDiskViewController(activity: viewModel, viewModel: disk)
         super.init(nibName: nil, bundle: nil)
         agentDisk.onSummaryChange = { [weak self] in
             guard let self, self.viewModel.page == .diskAudit else { return }

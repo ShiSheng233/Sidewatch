@@ -295,19 +295,25 @@ final class AgentDiskViewController: NSViewController, NSOutlineViewDataSource, 
 
     @objc private func showHelp(_ sender: NSButton) {
         let text = ViewFactory.label(
-            String(localized: "A file becomes eligible when Sidewatch sees the agent process writing its session log exit, or when that log has had no new activity for the idle timeout. Finishing a turn doesn't end a session, and a file shared by several sessions waits for all of them.\n\nSidewatch never deletes files marked Review. Automatic cleanup checks once a minute while Sidewatch is open."),
+            String(localized: "A file becomes eligible when Sidewatch sees the agent process writing its session log exit and the session isn't resumed within the idle timeout (at most a day), or when that log has had no new activity for the idle timeout. Finishing a turn doesn't end a session, a file shared by several sessions waits for all of them, and a file a running process still has open waits until it's closed.\n\nSidewatch never deletes files marked Review. Automatic cleanup checks once a minute while Sidewatch is open."),
             font: .systemFont(ofSize: NSFont.smallSystemFontSize + 1), wraps: true
         )
         text.preferredMaxLayoutWidth = 320
+        let folders = ViewFactory.button(String(localized: "Session Folders…"), symbol: "folder",
+                                         target: self, action: #selector(showSessionFolders))
+        folders.controlSize = .small
         let content = NSViewController()
         let container = NSView()
         container.addSubview(text)
+        container.addSubview(folders)
         NSLayoutConstraint.activate([
             text.topAnchor.constraint(equalTo: container.topAnchor, constant: 14),
             text.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
             text.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
-            text.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -14),
-            text.widthAnchor.constraint(equalToConstant: 320)
+            text.widthAnchor.constraint(equalToConstant: 320),
+            folders.topAnchor.constraint(equalTo: text.bottomAnchor, constant: 10),
+            folders.leadingAnchor.constraint(equalTo: text.leadingAnchor),
+            folders.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -14)
         ])
         content.view = container
         let popover = NSPopover()
@@ -315,6 +321,10 @@ final class AgentDiskViewController: NSViewController, NSOutlineViewDataSource, 
         popover.animates = !Motion.reduceMotion
         popover.contentViewController = content
         popover.show(relativeTo: sender.bounds, of: sender, preferredEdge: .maxY)
+    }
+
+    @objc private func showSessionFolders() {
+        AppDelegate.shared?.showSettings(.agentDisk)
     }
 
     @objc private func cleanEligible() {

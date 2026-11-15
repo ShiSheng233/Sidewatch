@@ -42,23 +42,50 @@ enum AgentLogReadResult: Sendable {
 }
 
 /// Reads one JSONL session log at a time. Parsing is bounded per line and cached by
-/// `(device, inode, size, mtime)`, so an unchanged log is never parsed twice.
+/// `(device, inode, size, mtime)`, so an unchanged log is never parsed twice. A log that
+/// only grew since its last parse resumes from the end of its last complete record
+/// instead of being parsed again from the start.
 ///
 /// Log content is data only: nothing read here is ever executed, and only structured
 /// tool-call/tool-result fields are inspected. Arbitrary output text is never treated
 /// as a path.
 struct AgentSessionLogReader {
+    /// Parser state at the end of the last complete record, so an appended log can be
+    /// parsed from where the previous read stopped.
+    private struct Resume {
+        var accumulator: LogAccumulator
+        var summary: LineScanSummary
+        var offset: UInt64
+        var lineNumber: Int
+        /// The bytes just before `offset`. A log whose prefix was rewritten in place is
+        /// parsed again from the start rather than resumed.
+        var tail: Data
+    }
+
     private struct Cached {
         var stat: AgentLogFileStat
         var provider: AgentLogProvider
         var parse: AgentLogParse
+        var resume: Resume?
     }
+
+    private static let tailBytes = 256
+    private static let chunkBytes = 64 * 1024
 
     private var cache: [String: Cached] = [:]
     let maxLineBytes: Int
 
     init(maxLineBytes: Int = 32 * 1024 * 1024) {
         self.maxLineBytes = maxLineBytes
+    }
+
+    /// Number of logs with cached parser state. Tests use it to check trimming.
+    var cachedLogCount: Int { cache.count }
+
+    /// Drops cached parses for logs that are no longer discovered, so the cache doesn't
+    /// grow with every log that ever existed.
+    mutating func retainOnly(_ logPaths: Set<String>) {
+        cache = cache.filter { logPaths.contains($0.key) }
     }
 
     mutating func read(logURL: URL, provider: AgentLogProvider, home: URL) -> AgentLogReadResult {
@@ -70,7 +97,8 @@ struct AgentSessionLogReader {
             return .skipped("the log is not a regular file")
         }
         let key = logURL.standardizedFileURL.path
-        if let cached = cache[key], cached.stat == stat, cached.provider == provider {
+        let cached = cache[key]
+        if let cached, cached.stat == stat, cached.provider == provider {
             var parse = cached.parse
             // The lease always uses the newest log mtime, even on a cache hit.
             if stat.modified > parse.session.lastActivityAt {
@@ -78,11 +106,23 @@ struct AgentSessionLogReader {
             }
             return .parsed(parse)
         }
+        var resume: Resume?
+        if let cached, cached.provider == provider,
+           cached.stat.device == stat.device, cached.stat.inode == stat.inode,
+           let previous = cached.resume, UInt64(stat.size) >= previous.offset,
+           Self.tailMatches(url: logURL, offset: previous.offset, tail: previous.tail) {
+            resume = previous
+        }
         do {
-            let parse = try parseLog(logURL: logURL, provider: provider, home: home, stat: stat)
-            cache[key] = Cached(stat: stat, provider: provider, parse: parse)
+            let (parse, next) = try parseLog(logURL: logURL, provider: provider, home: home,
+                                             stat: stat, resume: resume)
+            cache[key] = Cached(stat: stat, provider: provider, parse: parse, resume: next)
             return .parsed(parse)
+        } catch is CancellationError {
+            // Keep the previous state; a later scan resumes from it.
+            return .skipped("the scan was cancelled")
         } catch {
+            cache.removeValue(forKey: key)
             return .skipped(error.localizedDescription)
         }
     }
@@ -103,14 +143,41 @@ struct AgentSessionLogReader {
         )
     }
 
-    private func parseLog(logURL: URL, provider: AgentLogProvider,
-                          home: URL, stat: AgentLogFileStat) throws -> AgentLogParse {
-        var accumulator = LogAccumulator(provider: provider,
-                                         logPath: logURL.standardizedFileURL.path,
-                                         home: home,
-                                         fileModified: stat.modified)
-        let summary = try Self.readLines(url: logURL, maxLineBytes: maxLineBytes) { data, lineNumber in
+    private static func tailMatches(url: URL, offset: UInt64, tail: Data) -> Bool {
+        guard UInt64(tail.count) <= offset else { return false }
+        guard !tail.isEmpty else { return offset == 0 }
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return false }
+        defer { try? handle.close() }
+        do {
+            try handle.seek(toOffset: offset - UInt64(tail.count))
+            return try handle.read(upToCount: tail.count) == tail
+        } catch {
+            return false
+        }
+    }
+
+    private func parseLog(logURL: URL, provider: AgentLogProvider, home: URL,
+                          stat: AgentLogFileStat, resume: Resume?) throws -> (AgentLogParse, Resume?) {
+        var accumulator = resume?.accumulator ?? LogAccumulator(
+            provider: provider,
+            logPath: logURL.standardizedFileURL.path,
+            home: home,
+            fileModified: stat.modified
+        )
+        let scan = try Self.readLines(url: logURL, maxLineBytes: maxLineBytes,
+                                      from: resume.map { ($0.offset, $0.lineNumber, $0.summary) }) { data, lineNumber in
             accumulator.ingest(data, lineNumber: lineNumber)
+        }
+        let summary = scan.summary
+
+        // Resume state captures the parser before any end-of-file handling, so an appended
+        // record continues exactly where the complete records ended.
+        var next: Resume?
+        if let offset = scan.consumedOffset {
+            // A resumed read that found no new complete record keeps the previous tail.
+            let tail = scan.tail.isEmpty ? (resume?.tail ?? Data()) : scan.tail
+            next = Resume(accumulator: accumulator, summary: scan.resumableSummary, offset: offset,
+                          lineNumber: scan.lineNumber, tail: tail)
         }
 
         var issues = accumulator.issues
@@ -132,7 +199,10 @@ struct AgentSessionLogReader {
             fallbackID = stem
         }
         var lastActivity = max(accumulator.lastActivity, stat.modified)
-        let finalClaims = accumulator.finalClaims()
+        // `finalClaims` folds pending Codex calls into the claim list, so it runs on a copy
+        // that never becomes resume state.
+        var finished = accumulator
+        let finalClaims = finished.finalClaims()
         for claim in finalClaims where claim.recordedAt > lastActivity {
             lastActivity = claim.recordedAt
         }
@@ -145,13 +215,14 @@ struct AgentSessionLogReader {
             endedAt: nil,
             claims: finalClaims
         )
-        return AgentLogParse(
+        let parse = AgentLogParse(
             session: session,
             issues: issues,
             complete: summary.complete ? accumulator.complete : false,
             stat: stat,
             observedProjectRoots: accumulator.observedProjectRoots
         )
+        return (parse, next)
     }
 
     // MARK: - Bounded line streaming
@@ -164,18 +235,35 @@ struct AgentSessionLogReader {
         var truncatedFinalRecord = false
     }
 
+    private struct LineScan {
+        var summary: LineScanSummary
+        /// The summary before the unfinished final record was considered; resume state
+        /// starts from it so a record completed later isn't counted as truncated.
+        var resumableSummary: LineScanSummary
+        var lineNumber: Int
+        /// File offset just past the last complete record, or nil when the read ended in
+        /// the middle of an oversized record and can't be resumed.
+        var consumedOffset: UInt64?
+        var tail: Data
+    }
+
     /// Streams a log in fixed-size chunks. Each line is capped; an oversized line is
     /// skipped without accumulating unbounded memory. A record that cannot be decoded
-    /// is counted and excluded rather than guessed at.
+    /// is counted and excluded rather than guessed at. Cancellation is checked per chunk.
     private static func readLines(url: URL, maxLineBytes: Int,
-                                  onLine: (Data, Int) -> Bool) throws -> LineScanSummary {
+                                  from start: (offset: UInt64, lineNumber: Int, summary: LineScanSummary)?,
+                                  onLine: (Data, Int) -> Bool) throws -> LineScan {
         let handle = try FileHandle(forReadingFrom: url)
         defer { try? handle.close() }
+        let startOffset = start?.offset ?? 0
+        if startOffset > 0 { try handle.seek(toOffset: startOffset) }
 
-        var summary = LineScanSummary()
+        var summary = start?.summary ?? LineScanSummary()
         var buffer = Data()
-        var lineNumber = 0
+        var lineNumber = start?.lineNumber ?? 0
         var skippingOversized = false
+        var totalRead: UInt64 = 0
+        var tail = Data()
 
         func consumeLine(_ lineData: Data) {
             lineNumber += 1
@@ -203,12 +291,18 @@ struct AgentSessionLogReader {
 
         // FileHandle's autoreleased NSData chunks must drain too; an actor call
         // can otherwise retain the entire log corpus until the scan returns.
-        while let chunk = try autoreleasepool(invoking: { try handle.read(upToCount: 64 * 1024) }), !chunk.isEmpty {
+        while let chunk = try autoreleasepool(invoking: { try handle.read(upToCount: chunkBytes) }), !chunk.isEmpty {
+            try Task.checkCancellation()
+            totalRead += UInt64(chunk.count)
             buffer.append(chunk)
             var start = buffer.startIndex
             while let newline = buffer[start...].firstIndex(of: 0x0A) {
                 consumeLine(buffer[start..<newline])
                 start = buffer.index(after: newline)
+                // Keep the bytes ending at the last newline so a resumed read can confirm
+                // the file still has the same prefix.
+                let tailStart = max(buffer.startIndex, start - tailBytes)
+                tail = Data(buffer[tailStart..<start])
             }
             if start != buffer.startIndex { buffer.removeSubrange(buffer.startIndex..<start) }
             if buffer.count > maxLineBytes {
@@ -221,6 +315,8 @@ struct AgentSessionLogReader {
             }
         }
 
+        let consumed: UInt64? = skippingOversized ? nil : startOffset + totalRead - UInt64(buffer.count)
+        let resumable = summary
         if !buffer.isEmpty {
             if skippingOversized {
                 summary.complete = false
@@ -234,7 +330,9 @@ struct AgentSessionLogReader {
                 summary.complete = false
             }
         }
-        return summary
+        if skippingOversized { summary.complete = false }
+        return LineScan(summary: summary, resumableSummary: resumable, lineNumber: lineNumber,
+                        consumedOffset: consumed, tail: tail)
     }
 
     // MARK: - Record parsing

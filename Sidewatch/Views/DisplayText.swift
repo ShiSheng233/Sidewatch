@@ -42,6 +42,8 @@ enum DisplayText {
         switch code {
         case "waiting.session-active": String(localized: "Session hasn't ended or reached the idle timeout", comment: "Disk audit reason")
         case "waiting.quiet-period": String(localized: "Session ended or timed out; waiting a few minutes", comment: "Disk audit reason")
+        case "waiting.exit-grace": String(localized: "Agent exited; kept in case the session is resumed", comment: "Disk audit reason")
+        case "waiting.file-open": String(localized: "A running process has this file open", comment: "Disk audit reason")
         case "eligible.session-ended": String(localized: "Agent process exited", comment: "Disk audit reason")
         case "eligible.idle-expired": String(localized: "Session reached the idle timeout", comment: "Disk audit reason")
         case "eligible.mixed": String(localized: "Every claiming session exited or reached the idle timeout", comment: "Disk audit reason")

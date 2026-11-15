@@ -24,6 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var viewModel: ActivityViewModel?
     private var rules: RuleViewModel?
+    private var disk: AgentDiskViewModel?
     private var windowController: MainWindowController?
     private var settingsController: SettingsWindowController?
     private var notifiedLeftovers: Set<String> = []
@@ -35,10 +36,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let viewModel = ActivityViewModel(extensionManager: ExtensionManager(), connection: MonitorConnection())
         let rules = RuleViewModel(activity: viewModel)
+        let disk = AgentDiskViewModel()
         self.viewModel = viewModel
         self.rules = rules
+        self.disk = disk
 
-        let controller = MainWindowController(viewModel: viewModel, rules: rules)
+        let controller = MainWindowController(viewModel: viewModel, rules: rules, disk: disk)
         windowController = controller
         controller.showWindow(nil)
         controller.window?.makeKeyAndOrderFront(nil)
@@ -80,8 +83,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func showSettings(_ pane: SettingsPane? = nil) {
-        guard let viewModel, let rules else { return }
-        let controller = settingsController ?? SettingsWindowController(viewModel: viewModel, rules: rules)
+        guard let viewModel, let rules, let disk else { return }
+        let controller = settingsController ?? SettingsWindowController(viewModel: viewModel, rules: rules, disk: disk)
         settingsController = controller
         if let pane { controller.show(pane, animated: controller.window?.isVisible == true) }
         controller.showWindow(nil)

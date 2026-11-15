@@ -1133,3 +1133,35 @@ int32_t sw_probe_session_writers(SWSessionWriterCallback writer, void *context)
     free(pids);
     return 0;
 }
+
+int32_t sw_probe_open_files(SWOpenFileCallback file, void *context)
+{
+    if (file == NULL) return EINVAL;
+    pid_t *pids = NULL;
+    size_t pid_capacity = 0, pid_count = 0;
+    struct proc_fdinfo *fds = NULL;
+    size_t fd_capacity = 0;
+    int32_t result = sw_collect_pids(&pids, &pid_capacity, &pid_count);
+    if (result != 0) { free(pids); return result; }
+
+    uid_t user = getuid();
+    for (size_t index = 0; index < pid_count; ++index) {
+        SWProcessIdentity identity;
+        if (sw_probe_identity(pids[index], &identity) != 0 || identity.user_id != user) continue;
+        size_t fd_bytes = 0;
+        if (sw_read_fd_list(identity.pid, &fds, &fd_capacity, &fd_bytes) != 0) continue;
+        size_t fd_count = fd_bytes / sizeof(*fds);
+        for (size_t fd_index = 0; fd_index < fd_count; ++fd_index) {
+            if (fds[fd_index].proc_fdtype != PROX_FDTYPE_VNODE) continue;
+            struct vnode_fdinfo info;
+            memset(&info, 0, sizeof(info));
+            int bytes = proc_pidfdinfo(identity.pid, fds[fd_index].proc_fd,
+                                      PROC_PIDFDVNODEINFO, &info, (int)sizeof(info));
+            if (bytes != (int)sizeof(info)) continue;
+            file((uint64_t)(uint32_t)info.pvi.vi_stat.vst_dev, (uint64_t)info.pvi.vi_stat.vst_ino, context);
+        }
+    }
+    free(fds);
+    free(pids);
+    return 0;
+}

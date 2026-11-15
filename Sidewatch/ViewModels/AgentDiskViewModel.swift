@@ -42,6 +42,7 @@ final class AgentDiskViewModel {
     private enum Key {
         static let automaticCleanup = "Sidewatch.agentDiskAutomaticCleanup"
         static let idleHours = "Sidewatch.agentDiskIdleHours"
+        static let sessionFolders = "Sidewatch.agentDiskSessionFolders"
     }
 
     private let service: AgentDiskAuditService
@@ -86,6 +87,7 @@ final class AgentDiskViewModel {
         policy.automaticCleanup = defaults.bool(forKey: Key.automaticCleanup)
         let storedHours = defaults.integer(forKey: Key.idleHours)
         policy.idleHours = Self.idleHourChoices.contains(storedHours) ? storedHours : 72
+        policy.sessionFolders = Self.loadSessionFolders(defaults)
         if Self.isSnapshotRun { policy.automaticCleanup = false }
         self.policy = policy
     }
@@ -176,6 +178,40 @@ final class AgentDiskViewModel {
         }
     }
 
+    /// Adds a provider folder the automatic discovery can't see. The next scan covers it, and
+    /// any cleanup still running under the old folder list is replaced, because a newly
+    /// visible session may claim the same files.
+    func addSessionFolder(_ folder: AgentSessionFolder) {
+        guard !policy.sessionFolders.contains(folder) else { return }
+        policy.sessionFolders.append(folder)
+        sessionFoldersChanged()
+    }
+
+    func removeSessionFolder(_ folder: AgentSessionFolder) {
+        guard let index = policy.sessionFolders.firstIndex(of: folder) else { return }
+        policy.sessionFolders.remove(at: index)
+        sessionFoldersChanged()
+    }
+
+    private func sessionFoldersChanged() {
+        if let data = try? JSONEncoder().encode(policy.sessionFolders) {
+            defaults.set(data, forKey: Key.sessionFolders)
+        }
+        notify(.policy)
+        if isScanning, !inFlightManualCleanup {
+            cancelScan()
+            rescanAfterCancel()
+        } else if !isScanning {
+            scan(cleanup: false, foreground: false)
+        }
+    }
+
+    private static func loadSessionFolders(_ defaults: UserDefaults) -> [AgentSessionFolder] {
+        guard let data = defaults.data(forKey: Key.sessionFolders),
+              let folders = try? JSONDecoder().decode([AgentSessionFolder].self, from: data) else { return [] }
+        return folders.filter { AgentLogProvider(rawValue: $0.provider) != nil && $0.path.hasPrefix("/") }
+    }
+
     func setSearchText(_ text: String) {
         guard text != searchText else { return }
         searchText = text
@@ -233,7 +269,7 @@ final class AgentDiskViewModel {
             )
             // A cancelled cleanup must not commit a stale report, and its cancellation path
             // already cleared the scanning state.
-            guard !Task.isCancelled, generation == self.scanGeneration else { return }
+            guard !Task.isCancelled, !report.cancelled, generation == self.scanGeneration else { return }
             self.finish(report, cleanup: cleanup, allowedPaths: allowedPaths)
         }
         return scanTask
@@ -312,6 +348,7 @@ final class AgentDiskViewModel {
     var items: [AgentDiskItem] { report?.items ?? [] }
     var sessionCount: Int { report?.sessionCount ?? 0 }
     var issues: [String] { report?.issues ?? [] }
+    var sessionRoots: [AgentDiskSessionRoot] { report?.sessionRoots ?? [] }
     var totalBytes: Int64 { report?.totalBytes ?? 0 }
     var eligibleBytes: Int64 { report?.eligibleBytes ?? 0 }
     var eligibleCount: Int { items.reduce(0) { $0 + ($1.state == .eligible ? 1 : 0) } }

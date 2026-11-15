@@ -1,12 +1,13 @@
 import AppKit
 
 enum SettingsPane: String, CaseIterable {
-    case general, monitor, data
+    case general, monitor, agentDisk, data
 
     var title: String {
         switch self {
         case .general: String(localized: "General")
         case .monitor: String(localized: "Monitor")
+        case .agentDisk: String(localized: "Agent Disk")
         case .data: String(localized: "Data")
         }
     }
@@ -15,6 +16,7 @@ enum SettingsPane: String, CaseIterable {
         switch self {
         case .general: "gearshape"
         case .monitor: "checkmark.shield"
+        case .agentDisk: "internaldrive"
         case .data: "externaldrive"
         }
     }
@@ -29,7 +31,7 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate, NSW
     private static let width: CGFloat = 600
     private static let paneKey = "Sidewatch.settings.pane"
 
-    init(viewModel: ActivityViewModel, rules: RuleViewModel) {
+    init(viewModel: ActivityViewModel, rules: RuleViewModel, disk: AgentDiskViewModel) {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: Self.width, height: 400),
             styleMask: [.titled, .closable],
@@ -46,6 +48,7 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate, NSW
         panes = [
             .general: GeneralSettingsPane(viewModel: viewModel),
             .monitor: MonitorSettingsPane(viewModel: viewModel),
+            .agentDisk: AgentDiskSettingsPane(disk: disk),
             .data: DataSettingsPane(viewModel: viewModel, rules: rules)
         ]
         for pane in panes.values {

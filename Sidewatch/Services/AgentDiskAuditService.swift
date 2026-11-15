@@ -6,7 +6,13 @@ import Foundation
 /// Discovery is read-only. Deletion happens only when `cleanup` is true, the target
 /// is still eligible after a second scan, and every identity check passes. Logs are
 /// never executed and their prose is never interpreted as a path.
+///
+/// Scanning is blocking file I/O, so the actor runs on its own serial queue instead of
+/// occupying a thread in Swift's cooperative pool.
 actor AgentDiskAuditService {
+    private let queue = DispatchSerialQueue(label: "dev.shisheng.Sidewatch.agent-disk", qos: .utility)
+    nonisolated var unownedExecutor: UnownedSerialExecutor { queue.asUnownedSerialExecutor() }
+
     private struct TemporaryRoot: Equatable {
         var lexicalPath: String
         var realPath: String
@@ -85,6 +91,7 @@ actor AgentDiskAuditService {
 
     private struct ScanOutcome {
         var report = AgentDiskReport()
+        var cancelled = false
         var snapshots: [String: Snapshot] = [:]
         var providersByLog: [String: AgentLogProvider] = [:]
         var incompleteLogs: Set<String> = []
@@ -128,6 +135,9 @@ actor AgentDiskAuditService {
     /// Every eligible artifact must have had no file activity for this long.
     private static let quietPeriod: TimeInterval = 5 * 60
     private static let idleHourSeconds: TimeInterval = 60 * 60
+    /// An observed exit doesn't make files eligible at once: the user may resume the
+    /// session. The grace is the idle timeout, capped at a day.
+    private static let maximumExitGrace: TimeInterval = 24 * 60 * 60
 
     init(home: URL = FileManager.default.homeDirectoryForCurrentUser,
          temporaryRoots: [URL]? = nil) {
@@ -170,12 +180,18 @@ actor AgentDiskAuditService {
                cleanup: Bool = false,
                now: Date = Date(),
                allowedPaths: Set<String>? = nil) -> AgentDiskReport {
+        // Deletion is bound to the identity a previous scan recorded: a file must have been
+        // seen unchanged by that scan (the one the user reviewed, or the previous minute's
+        // automatic pass) before this pass may remove it.
         let reviewedSnapshots = lastSnapshots
-        let first = scan(policy: policy, now: now)
-        var outcome = first
+        let outcome = scan(policy: policy, now: now)
+        guard !outcome.cancelled else {
+            var report = outcome.report
+            report.cancelled = true
+            return report
+        }
 
         if cleanup && !Task.isCancelled {
-            outcome = scan(policy: policy, now: now)
             var report = outcome.report
             var seenIssues = Set(report.issues)
             var reclaimedBytes: Int64 = 0
@@ -198,14 +214,16 @@ actor AgentDiskAuditService {
                     index += 1
                     continue
                 }
-                guard let snapshot = outcome.snapshots[item.path] else {
+                guard let snapshot = outcome.snapshots[item.path],
+                      let baseline = reviewedSnapshots[item.path] else {
+                    // Not in the previous scan: it becomes deletable once a later pass
+                    // confirms it is unchanged.
                     index += 1
                     continue
                 }
 
                 // A path the user reviewed must not have been replaced since.
-                let baseline = reviewedSnapshots[item.path] ?? first.snapshots[item.path]
-                if let baseline, baseline.identity != snapshot.identity {
+                if baseline.identity != snapshot.identity {
                     item.state = .failed
                     item.reason = "failed.target-changed"
                     item.eligibleAt = nil
@@ -309,9 +327,15 @@ actor AgentDiskAuditService {
             if seenIssues.insert(text).inserted { issues.append(text) }
         }
 
-        let logs = discoverLogs(sessionPaths: &outcome.sessionPaths, note: note)
+        let logs = discoverLogs(policy: policy, sessionPaths: &outcome.sessionPaths,
+                                roots: &outcome.report.sessionRoots, note: note)
+        reader.retainOnly(Set(logs.map(\.url.path)))
         var sessions: [AgentArtifactSession] = []
         for log in logs {
+            if Task.isCancelled {
+                outcome.cancelled = true
+                return outcome
+            }
             outcome.providersByLog[log.url.path] = log.provider
             switch reader.read(logURL: log.url, provider: log.provider, home: home) {
             case .parsed(let parse):
@@ -324,13 +348,16 @@ actor AgentDiskAuditService {
             case .missing:
                 break
             case .skipped(let reason):
+                if Task.isCancelled {
+                    outcome.cancelled = true
+                    return outcome
+                }
                 note("Skipped agent log \(log.url.path): \(reason).")
             }
         }
         sessions = liveness.observe(sessions, now: now)
         if let issue = liveness.issue { note(issue) }
         outcome.report.sessionCount = Set(sessions.map { "\($0.agent)\u{0}\($0.id)" }).count
-
 
         var groups: [String: GroupBuilder] = [:]
         for (sessionIndex, session) in sessions.enumerated() {
@@ -462,6 +489,7 @@ actor AgentDiskAuditService {
             if let snapshot { outcome.snapshots[path] = snapshot }
         }
 
+        deferOpenFiles(&items, snapshots: outcome.snapshots, note: note)
         items.sort { $0.path < $1.path }
         outcome.report.items = items
         let referencedLogs = Set(items.flatMap(\.logPaths))
@@ -572,28 +600,30 @@ actor AgentDiskAuditService {
             return Lease(state: .waiting, reason: "waiting.session-active", eligibleAt: nil)
         }
         let idleSeconds = TimeInterval(max(1, policy.idleHours)) * Self.idleHourSeconds
-        var latestBase = Date.distantPast
+        let exitGrace = min(idleSeconds, Self.maximumExitGrace)
         var latestEligible = Date.distantPast
         var allEnded = true
         var idleOnly = true
+        var active = false
+        var inExitGrace = false
 
         for session in sessions {
             let base: Date
             if let endedAt = session.endedAt {
-                base = max(endedAt, session.lastActivityAt)
-                allEnded = allEnded && true
+                base = max(endedAt, session.lastActivityAt).addingTimeInterval(exitGrace)
                 idleOnly = false
+                if base > now { inExitGrace = true }
             } else {
                 base = session.lastActivityAt.addingTimeInterval(idleSeconds)
                 allEnded = false
+                if base > now { active = true }
             }
-            let eligible = base.addingTimeInterval(Self.quietPeriod)
-            latestBase = max(latestBase, base)
-            latestEligible = max(latestEligible, eligible)
+            latestEligible = max(latestEligible, base.addingTimeInterval(Self.quietPeriod))
         }
 
         if now < latestEligible {
-            let reason = latestBase > now ? "waiting.session-active" : "waiting.quiet-period"
+            let reason = active ? "waiting.session-active"
+                : inExitGrace ? "waiting.exit-grace" : "waiting.quiet-period"
             return Lease(state: .waiting, reason: reason, eligibleAt: latestEligible)
         }
         let reason: String
@@ -605,6 +635,29 @@ actor AgentDiskAuditService {
             reason = "eligible.mixed"
         }
         return Lease(state: .eligible, reason: reason, eligibleAt: latestEligible)
+    }
+
+    /// A file still open in a running process is in use, whatever its session's lease says:
+    /// a server started from `/tmp` keeps its script open. Eligible items whose inode is
+    /// open anywhere in the current user's processes wait instead. If the processes can't
+    /// be inspected, every eligible item waits.
+    private func deferOpenFiles(_ items: inout [AgentDiskItem], snapshots: [String: Snapshot],
+                                note: (String) -> Void) {
+        guard items.contains(where: { $0.state == .eligible }) else { return }
+        let collector = OpenFileCollector()
+        let status = sw_probe_open_files(collectOpenFile, Unmanaged.passUnretained(collector).toOpaque())
+        if status != 0 {
+            note("Open-file check failed (errno \(status)); cleanup is deferred.")
+        }
+        for index in items.indices where items[index].state == .eligible {
+            let key = snapshots[items[index].path].map { InodeKey(device: $0.identity.device, inode: $0.identity.inode) }
+            let open = key.map { collector.files.contains(OpenFileCollector.Key(device: $0.device, inode: $0.inode)) } ?? true
+            if status != 0 || open {
+                items[index].state = .waiting
+                items[index].reason = "waiting.file-open"
+                items[index].eligibleAt = nil
+            }
+        }
     }
 
     /// One process probe covers every log behind this pass's eligible items,
@@ -716,9 +769,10 @@ actor AgentDiskAuditService {
         var provider: AgentLogProvider
     }
 
-    private func discoverLogs(sessionPaths: inout [ProjectPath],
+    private func discoverLogs(policy: AgentDiskPolicy, sessionPaths: inout [ProjectPath],
+                              roots: inout [AgentDiskSessionRoot],
                               note: @escaping (String) -> Void) -> [DiscoveredLog] {
-        let candidates = AgentSessionRoots.discover(home: home)
+        let candidates = AgentSessionRoots.discover(home: home, customFolders: policy.sessionFolders)
 
         var seenRoots = Set<String>()
         var seenLogs = Set<String>()
@@ -731,8 +785,11 @@ actor AgentDiskAuditService {
             guard seenRoots.insert(rootPath).inserted else { continue }
             sessionPaths.append(ProjectPath(lexicalPath: rootPath, realPath: Self.realPath(rootPath)))
             var isDirectory: ObjCBool = false
-            guard FileManager.default.fileExists(atPath: rootPath, isDirectory: &isDirectory),
-                  isDirectory.boolValue else { continue }
+            let exists = FileManager.default.fileExists(atPath: rootPath, isDirectory: &isDirectory)
+                && isDirectory.boolValue
+            roots.append(AgentDiskSessionRoot(provider: candidate.provider, path: rootPath,
+                                              folder: candidate.folder, exists: exists))
+            guard exists else { continue }
             guard let enumerator = FileManager.default.enumerator(
                 at: URL(fileURLWithPath: rootPath),
                 includingPropertiesForKeys: [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey],
@@ -1080,4 +1137,18 @@ actor AgentDiskAuditService {
             report.issues.append(text)
         }
     }
+}
+
+private final class OpenFileCollector {
+    struct Key: Hashable {
+        var device: UInt64
+        var inode: UInt64
+    }
+    var files: Set<Key> = []
+}
+
+private func collectOpenFile(_ device: UInt64, _ inode: UInt64, _ context: UnsafeMutableRawPointer?) {
+    guard let context else { return }
+    let collector = Unmanaged<OpenFileCollector>.fromOpaque(context).takeUnretainedValue()
+    collector.files.insert(OpenFileCollector.Key(device: device, inode: inode))
 }

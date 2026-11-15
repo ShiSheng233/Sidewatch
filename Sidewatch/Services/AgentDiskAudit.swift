@@ -23,10 +23,31 @@ struct AgentArtifactSession: Sendable {
     var claims: [AgentArtifactClaim]
 }
 
+/// A session folder the user added because Sidewatch can't see the provider's
+/// configuration (for example `CLAUDE_CONFIG_DIR` set only in a shell profile).
+struct AgentSessionFolder: Codable, Hashable, Sendable {
+    /// `AgentLogProvider` raw value.
+    var provider: String
+    var path: String
+}
+
 struct AgentDiskPolicy: Codable, Equatable, Sendable {
     var automaticCleanup = false
     /// A session without an explicit shutdown becomes eligible after this idle lease.
     var idleHours: Int = 72
+    /// Extra provider folders to scan in addition to the discovered defaults.
+    var sessionFolders: [AgentSessionFolder] = []
+}
+
+/// A directory the audit read session logs from, shown so the user can see what was covered.
+struct AgentDiskSessionRoot: Hashable, Sendable {
+    var provider: String
+    var path: String
+    /// The user-added folder this root came from; nil for discovered defaults.
+    var folder: AgentSessionFolder?
+    var exists: Bool
+
+    var isCustom: Bool { folder != nil }
 }
 
 enum AgentDiskItemState: String, Sendable {
@@ -68,8 +89,12 @@ struct AgentDiskReport: Sendable {
     /// Sessions referenced by `items`, for grouping files under the session that wrote them.
     var sessions: [AgentDiskSession] = []
     var issues: [String] = []
+    /// Every directory searched for session logs, in discovery order.
+    var sessionRoots: [AgentDiskSessionRoot] = []
     var reclaimedBytes: Int64 = 0
     var removedCount = 0
+    /// True when the scan stopped early. A cancelled report is never published.
+    var cancelled = false
 
     var totalBytes: Int64 { items.reduce(0) { $1.state == .removed ? $0 : $0 + $1.bytes } }
     var eligibleBytes: Int64 { items.reduce(0) { $1.state == .eligible ? $0 + $1.bytes : $0 } }

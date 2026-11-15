@@ -3,22 +3,25 @@ import Foundation
 struct AgentSessionRoot: Sendable {
     let provider: String
     let directory: URL
+    /// The user-added folder this root came from; nil for discovered defaults.
+    var folder: AgentSessionFolder?
 }
 
 /// Provider-owned locations only. Project-folder encodings never establish cwd.
 /// A custom home is isolated from the real process environment unless explicitly supplied.
 enum AgentSessionRoots {
-    static func discover(home: URL, environment: [String: String]? = nil) -> [AgentSessionRoot] {
+    static func discover(home: URL, environment: [String: String]? = nil,
+                         customFolders: [AgentSessionFolder] = []) -> [AgentSessionRoot] {
         let home = home.standardizedFileURL
         let realHome = FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL
         let environment = environment ?? (home == realHome ? ProcessInfo.processInfo.environment : [:])
         var roots: [AgentSessionRoot] = []
         var seen: Set<String> = []
 
-        func add(_ provider: String, _ directory: URL) {
+        func add(_ provider: String, _ directory: URL, folder: AgentSessionFolder? = nil) {
             let directory = directory.resolvingSymlinksInPath().standardizedFileURL
             if seen.insert(provider + ":" + directory.path).inserted {
-                roots.append(AgentSessionRoot(provider: provider, directory: directory))
+                roots.append(AgentSessionRoot(provider: provider, directory: directory, folder: folder))
             }
         }
 
@@ -91,7 +94,35 @@ enum AgentSessionRoots {
             ?? configured(setting?.sessionDir) { add("pi", sessions) }
         let subagents = readSettings(pi.appendingPathComponent("extensions/subagent/config.json"))
         if let sessions = configured(subagents?.defaultSessionDir) { add("pi", sessions) }
+
+        for folder in customFolders {
+            guard AgentLogProvider(rawValue: folder.provider) != nil,
+                  let directory = configured(folder.path) else { continue }
+            for root in sessionDirectories(provider: folder.provider, folder: directory) {
+                add(folder.provider, root, folder: folder)
+            }
+        }
         return roots
+    }
+
+    /// A user may pick either a provider's configuration folder (`~/.claude-work`) or the
+    /// session folder inside it. Configuration folders map to their session subfolders, so a
+    /// scan never walks unrelated JSONL such as a prompt history.
+    static func sessionDirectories(provider: String, folder: URL) -> [URL] {
+        func isDirectory(_ url: URL) -> Bool {
+            var directory: ObjCBool = false
+            return FileManager.default.fileExists(atPath: url.path, isDirectory: &directory) && directory.boolValue
+        }
+        let candidates: [String]
+        switch provider {
+        case "codex": candidates = ["sessions", "archived_sessions"]
+        case "claude": candidates = ["projects"]
+        case "omp": candidates = ["agent/sessions", "sessions", "profiles"]
+        case "pi": candidates = ["sessions"]
+        default: candidates = []
+        }
+        let nested = candidates.map { folder.appendingPathComponent($0, isDirectory: true) }.filter(isDirectory)
+        return nested.isEmpty ? [folder] : nested
     }
 
     private struct DirectorySettings: Decodable {
