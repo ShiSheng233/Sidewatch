@@ -427,6 +427,7 @@ final class EndpointSecurityClient: @unchecked Sendable {
         stopping = false
         activeCallbacks = 0
         lifecycleLock.unlock()
+        Self.muteNoise(client)
 
         stateLock.lock()
         let targetAuth = Self.requiredAuthRawValues(users.values.map(\.policy))
@@ -949,13 +950,61 @@ final class EndpointSecurityClient: @unchecked Sendable {
         lifecycleLock.unlock()
         defer { finishedCallback() }
 
-        if Self.isAuthorizationEventType(message.pointee.event_type) {
+        let type = message.pointee.event_type
+        if Self.isAuthorizationEventType(type) {
             let decoded = ESMessageDecoder.decode(message, bootID: capture.bootID)
             processAuthorization(client: client, message: message, decoded: decoded)
+        } else if Self.fileNotificationRawValues.contains(type.rawValue),
+                  skipUnrelatedFileNotification(message) {
+            return
         } else {
             let decoded = ESMessageDecoder.decode(message, bootID: capture.bootID)
             processNotification(decoded: decoded)
         }
+    }
+
+    /// File notifications arrive for every process on the system, and they share this
+    /// client's serial queue with AUTH messages. Most come from processes no agent is
+    /// related to; for those, only the sequence is tracked and no path is copied.
+    /// Returns false when the message needs the full notification path.
+    private func skipUnrelatedFileNotification(_ message: UnsafePointer<es_message_t>) -> Bool {
+        let identity = ESMessageDecoder.identity(of: message, bootID: capture.bootID)
+        stateLock.lock()
+        guard !fileNotificationMattersLocked(identity) else {
+            stateLock.unlock()
+            return false
+        }
+        let header = ESMessageDecoder.header(message)
+        var gaps: [(UInt32, CollectionGap)] = []
+        var graphUsers: Set<UInt32> = []
+        var healthUsers: Set<UInt32> = []
+        appendSequenceGapsLocked(sequence: header.globalSequence, occurredAt: header.occurredAt,
+                                 gaps: &gaps, graphUsers: &graphUsers, healthUsers: &healthUsers)
+        let callbacks = self.callbacks
+        stateLock.unlock()
+        if !gaps.isEmpty || !graphUsers.isEmpty || !healthUsers.isEmpty {
+            deliver(activities: [], gaps: gaps, graphUsers: graphUsers, healthUsers: healthUsers,
+                    callbacks: callbacks)
+        }
+        return true
+    }
+
+    /// True when the full notification path could record an activity or change the graph
+    /// for this execution: it needs adopting, its record needs a state refresh, or a user's
+    /// engine relates it to an agent. Mirrors `adoptObservedProcessLocked` and
+    /// `appendFileActivityLocked`.
+    private func fileNotificationMattersLocked(_ identity: ExecutionIdentity) -> Bool {
+        guard let known = executionIndex.latest[identity.process], known.identity == identity else { return true }
+        guard let owners = provenance.scopes(for: identity.process) else { return false }
+        for userID in owners {
+            guard let scope = users[userID] else { continue }
+            if let existing = scope.engine.execution(for: identity),
+               existing.state == .unknown || existing.evidence != .observed {
+                return true
+            }
+            if scope.engine.isRelated(identity) { return true }
+        }
+        return false
     }
 
     private func finishedCallback() {
@@ -1707,7 +1756,18 @@ final class EndpointSecurityClient: @unchecked Sendable {
         graphUsers: inout Set<UInt32>,
         healthUsers: inout Set<UInt32>
     ) {
-        guard let sequence = decoded.globalSequence else { return }
+        appendSequenceGapsLocked(sequence: decoded.globalSequence, occurredAt: decoded.occurredAt,
+                                 gaps: &gaps, graphUsers: &graphUsers, healthUsers: &healthUsers)
+    }
+
+    private func appendSequenceGapsLocked(
+        sequence: UInt64?,
+        occurredAt: Date,
+        gaps: inout [(UInt32, CollectionGap)],
+        graphUsers: inout Set<UInt32>,
+        healthUsers: inout Set<UInt32>
+    ) {
+        guard let sequence else { return }
 
         if let previous = lastGlobalSequence,
            sequence > previous,
@@ -1717,7 +1777,7 @@ final class EndpointSecurityClient: @unchecked Sendable {
             markCaptureUncertainLocked()
             let gap = CollectionGap(
                 captureID: capture.id,
-                occurredAt: decoded.occurredAt,
+                occurredAt: occurredAt,
                 reason: "sequenceGap",
                 missingCount: missing
             )
@@ -2166,18 +2226,45 @@ final class EndpointSecurityClient: @unchecked Sendable {
             && type.rawValue <= ES_EVENT_TYPE_AUTH_UNLINK.rawValue
     }
 
+    /// NOTIFY_WRITE is not subscribed: it fires for every write call system-wide, and a
+    /// modifying CLOSE already records each changed file once.
     private static func notificationEventRawValues() -> Set<UInt32> {
-        [
+        let process: Set<UInt32> = [
             ES_EVENT_TYPE_NOTIFY_FORK.rawValue,
             ES_EVENT_TYPE_NOTIFY_EXEC.rawValue,
             ES_EVENT_TYPE_NOTIFY_EXIT.rawValue,
-            ES_EVENT_TYPE_NOTIFY_OPEN.rawValue,
-            ES_EVENT_TYPE_NOTIFY_CREATE.rawValue,
-            ES_EVENT_TYPE_NOTIFY_WRITE.rawValue,
-            ES_EVENT_TYPE_NOTIFY_CLOSE.rawValue,
-            ES_EVENT_TYPE_NOTIFY_RENAME.rawValue,
-            ES_EVENT_TYPE_NOTIFY_UNLINK.rawValue
         ]
+        return process.union(fileNotificationRawValues)
+    }
+
+    private static let fileNotificationRawValues: Set<UInt32> = [
+        ES_EVENT_TYPE_NOTIFY_OPEN.rawValue,
+        ES_EVENT_TYPE_NOTIFY_CREATE.rawValue,
+        ES_EVENT_TYPE_NOTIFY_CLOSE.rawValue,
+        ES_EVENT_TYPE_NOTIFY_RENAME.rawValue,
+        ES_EVENT_TYPE_NOTIFY_UNLINK.rawValue,
+    ]
+
+    /// Mutes events that can never be agent activity worth recording: the monitor's own
+    /// database and log I/O, and device-node opens and closes (every process touches
+    /// /dev/null). AUTH events are never muted by path, so protection rules still apply.
+    private static func muteNoise(_ client: OpaquePointer) {
+        var token = audit_token_t()
+        let status = withUnsafeMutableBytes(of: &token) { buffer in
+            sw_probe_self_token(buffer.baseAddress!.assumingMemoryBound(to: UInt8.self), buffer.count)
+        }
+        if status == 0 {
+            if es_mute_process(client, &token) != ES_RETURN_SUCCESS {
+                Diagnostics.endpointSecurity.error("Muting the monitor's own events failed")
+            }
+        }
+        let deviceEvents = [ES_EVENT_TYPE_NOTIFY_OPEN, ES_EVENT_TYPE_NOTIFY_CLOSE]
+        let result = deviceEvents.withUnsafeBufferPointer { events in
+            es_mute_path_events(client, "/dev/", ES_MUTE_PATH_TYPE_TARGET_PREFIX, events.baseAddress!, events.count)
+        }
+        if result != ES_RETURN_SUCCESS {
+            Diagnostics.endpointSecurity.error("Muting device-node notifications failed")
+        }
     }
 
     private static func requiredAuthRawValues(

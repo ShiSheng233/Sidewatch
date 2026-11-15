@@ -250,8 +250,6 @@ enum DatabaseMigrations {
                 CREATE INDEX control_actions_execution
                     ON control_actions(execution_id, requested_at_us DESC);
 
-                CREATE INDEX activities_order
-                    ON activities(id DESC);
                 CREATE INDEX activities_retention
                     ON activities(occurred_at_us, id);
                 CREATE INDEX activities_project

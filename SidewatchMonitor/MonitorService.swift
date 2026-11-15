@@ -552,6 +552,10 @@ private final class MonitorSession: NSObject, MonitorRemote, @unchecked Sendable
     private let userID: UInt32
     private let lock = NSLock()
     private var handshaken = false
+    /// Requests running for this connection. A well-behaved host has a handful in flight;
+    /// the cap keeps a misbehaving one from piling up unbounded store work.
+    private var inFlight = 0
+    private static let maximumInFlight = 32
     init(service: MonitorService, userID: UInt32) { self.service = service; self.userID = userID }
 
     func handshake(_ version: Int, withReply reply: @escaping (Data) -> Void) {
@@ -626,8 +630,18 @@ private final class MonitorSession: NSObject, MonitorRemote, @unchecked Sendable
             reply.send(MonitorWire.failure("Monitor connection is not ready.", code: "not_connected"))
             return
         }
+        let admitted = lock.withLock { () -> Bool in
+            guard inFlight < Self.maximumInFlight else { return false }
+            inFlight += 1
+            return true
+        }
+        guard admitted else {
+            reply.send(MonitorWire.failure("Too many monitor requests are in progress.", code: "busy"))
+            return
+        }
         let uid = userID
         Task {
+            defer { lock.withLock { inFlight -= 1 } }
             do { reply.send(try await operation(service, uid)) }
             catch {
                 let code = (error as? ActivityStoreError)?.code

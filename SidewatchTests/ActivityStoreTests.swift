@@ -988,3 +988,59 @@ final class ActivityStoreTests: XCTestCase {
             gaps: gaps)
     }
 }
+
+// MARK: - Graph deltas
+
+extension ActivityStoreTests {
+    private func view(_ graph: GraphSnapshot) -> PersistedGraphView {
+        PersistedGraphView(
+            executions: Dictionary(graph.executions.map { ($0.identity.stableID, $0) }, uniquingKeysWith: { _, new in new }),
+            sessions: Dictionary(graph.sessions.map { ($0.id, $0) }, uniquingKeysWith: { _, new in new }),
+            edges: Set(graph.edges),
+            associations: Set(graph.associations))
+    }
+
+    func testGraphDeltaCarriesOnlyChangedRows() {
+        let parent = makeExecution(pid: 10, start: baseDate)
+        let sibling = makeExecution(pid: 11, start: baseDate, parent: parent.identity)
+        let committed = GraphSnapshot(executions: [parent, sibling])
+
+        var exited = sibling
+        exited.state = .exited
+        exited.endedAt = baseDate.addingTimeInterval(5)
+        let child = makeExecution(pid: 12, start: baseDate, parent: parent.identity)
+        let edge = ExecutionEdge(parent: parent.identity, child: child.identity, kind: .fork,
+                                 evidence: .observed, observedAt: baseDate)
+        let current = GraphSnapshot(executions: [parent, exited, child], edges: [edge])
+
+        let delta = view(committed).delta(current)
+        XCTAssertEqual(Set(delta.executions.map(\.identity)), [exited.identity, child.identity])
+        XCTAssertEqual(delta.edges, [edge])
+        XCTAssertTrue(view(current).delta(current).executions.isEmpty, "An unchanged graph sends nothing")
+    }
+
+    func testGraphDeltaResendsChildrenWhenTheirParentAppears() {
+        let parent = makeExecution(pid: 20, start: baseDate)
+        let child = makeExecution(pid: 21, start: baseDate, parent: parent.identity)
+        // The child was committed before its parent was known.
+        let delta = view(GraphSnapshot(executions: [child])).delta(GraphSnapshot(executions: [parent, child]))
+        XCTAssertEqual(Set(delta.executions.map(\.identity)), [parent.identity, child.identity])
+    }
+
+    func testDeltaIngestLinksAParentCommittedLater() async throws {
+        let store = try ActivityStore(path: try makePath())
+        defer { try? store.close() }
+        let parent = makeExecution(pid: 30, start: baseDate)
+        let child = makeExecution(pid: 31, start: baseDate, parent: parent.identity)
+        _ = try await store.ingest(makeBatch(executions: [child]))
+
+        let full = GraphSnapshot(executions: [parent, child])
+        var batch = makeBatch()
+        batch.graph = view(GraphSnapshot(executions: [child])).delta(full)
+        batch.currentExecutions = full.executions
+        _ = try await store.ingest(batch)
+
+        let graph = try await store.graph()
+        XCTAssertEqual(graph.executions.first { $0.identity == child.identity }?.parent, parent.identity)
+    }
+}

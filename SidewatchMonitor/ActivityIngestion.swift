@@ -44,8 +44,19 @@ final class ActivityIngestion: @unchecked Sendable {
             remainingEvents == 0 && endpoints.isEmpty && gaps.isEmpty && !graphDirty
         }
     }
+    /// The graph rows last committed for a user, so later batches carry only changes.
+    /// Cleared whenever the store's rows may have diverged: after a failure, after a
+    /// history mutation, or when the user's store is replaced.
+    private struct PersistedGraph {
+        var store: ObjectIdentifier
+        var executions: [String: ExecutionRecord] = [:]
+        var sessions: [String: AgentSession] = [:]
+        var edges: Set<ExecutionEdge> = []
+        var associations: Set<ExecutionAssociation> = []
+    }
     private let lock = NSLock()
     private var buffers: [UInt32: Buffer] = [:]
+    private var persisted: [UInt32: PersistedGraph] = [:]
     /// Users whose history is being mutated. Their callbacks keep buffering and no
     /// persistence pass copies their graph until the mutation resumes them.
     private var suspended: Set<UInt32> = []
@@ -129,6 +140,7 @@ final class ActivityIngestion: @unchecked Sendable {
     ) async throws -> T {
         await acquireRetention(userID: userID)
         let boundary = lock.withLock { () -> Date in
+            persisted.removeValue(forKey: userID)
             // Everything accepted up to this instant is detached atomically and will be
             // written before the mutation; later callbacks accumulate fresh state.
             var buffer = buffers[userID] ?? Buffer()
@@ -258,16 +270,59 @@ final class ActivityIngestion: @unchecked Sendable {
 
     private func persist(_ work: PendingWork, userID: UInt32) async throws {
         let store = try await stores(userID)
-        let batch = IngestionBatch(
-            capture: capture,
-            graph: snapshot(userID),
-            activities: work.activities,
-            endpoints: work.endpoints,
-            gaps: work.gaps)
-        let watermark = try await store.ingest(batch)
-        let recovered = lock.withLock { failedUsers.remove(userID) != nil }
+        let storeKey = ObjectIdentifier(store)
+        let previous = lock.withLock { persisted[userID] }.flatMap { $0.store == storeKey ? $0 : nil }
+
+        // The engine graph is copied under the lock AUTH decisions also take, so it is read
+        // only when it changed, or when an activity names an execution not yet committed.
+        let needsGraph = work.graphDirty || previous == nil || work.activities.contains { activity in
+            guard let execution = activity.execution else { return false }
+            return previous?.executions[execution.stableID] == nil
+        }
+        var batch = IngestionBatch(capture: capture, graph: GraphSnapshot(),
+                                   activities: work.activities, endpoints: work.endpoints, gaps: work.gaps)
+        var next = previous ?? PersistedGraph(store: storeKey)
+        if needsGraph {
+            let full = snapshot(userID)
+            if let previous {
+                batch.graph = Self.delta(full, since: previous)
+                batch.currentExecutions = full.executions
+            } else {
+                batch.graph = full
+            }
+            next = Self.record(full, store: storeKey)
+        }
+        let watermark: Int64
+        do {
+            watermark = try await store.ingest(batch)
+        } catch {
+            lock.withLock { _ = persisted.removeValue(forKey: userID) }
+            throw error
+        }
+        let recovered = lock.withLock { () -> Bool in
+            // A history mutation that started meanwhile invalidated the cache; keep it invalid.
+            if !suspended.contains(userID) { persisted[userID] = next }
+            return failedUsers.remove(userID) != nil
+        }
         if recovered { Diagnostics.storage.notice("Activity storage recovered") }
         committed(userID, watermark)
+    }
+
+    private static func record(_ graph: GraphSnapshot, store: ObjectIdentifier) -> PersistedGraph {
+        PersistedGraph(
+            store: store,
+            executions: Dictionary(graph.executions.map { ($0.identity.stableID, $0) }, uniquingKeysWith: { _, new in new }),
+            sessions: Dictionary(graph.sessions.map { ($0.id, $0) }, uniquingKeysWith: { _, new in new }),
+            edges: Set(graph.edges),
+            associations: Set(graph.associations))
+    }
+
+    /// Rows that differ from the last commit. A new execution also resends the executions
+    /// that point at it, so a parent link that couldn't resolve earlier is filled in, and
+    /// edges and associations touching a changed row are resent for the same reason.
+    private static func delta(_ full: GraphSnapshot, since previous: PersistedGraph) -> GraphSnapshot {
+        PersistedGraphView(executions: previous.executions, sessions: previous.sessions,
+                           edges: previous.edges, associations: previous.associations).delta(full)
     }
 
     private func recordFailure(_ work: PendingWork, userID: UInt32, error: Error) {
@@ -304,6 +359,10 @@ final class ActivityIngestion: @unchecked Sendable {
         lock.withLock {
             suspended.remove(userID)
             pausedWork.removeValue(forKey: userID)
+            // The mutation may have removed committed rows. The next pass rewrites the
+            // whole graph so history again holds everything the engine knows.
+            persisted.removeValue(forKey: userID)
+            buffers[userID, default: Buffer()].graphDirty = true
         }
         schedule()
     }
@@ -345,5 +404,45 @@ final class ActivityIngestion: @unchecked Sendable {
         } else {
             buffers[userID, default: Buffer()].gaps.append(.init(captureID: capture.id, occurredAt: Date(), reason: reason, missingCount: count))
         }
+    }
+}
+
+/// The committed graph rows used to compute a delta. Separate from the ingestion actor
+/// state so the delta rules can be tested directly.
+struct PersistedGraphView {
+    var executions: [String: ExecutionRecord]
+    var sessions: [String: AgentSession]
+    var edges: Set<ExecutionEdge>
+    var associations: Set<ExecutionAssociation>
+
+    func delta(_ full: GraphSnapshot) -> GraphSnapshot {
+        var changed = Set<String>()
+        var added = Set<String>()
+        for record in full.executions {
+            let key = record.identity.stableID
+            guard let old = executions[key] else {
+                added.insert(key)
+                changed.insert(key)
+                continue
+            }
+            if old != record { changed.insert(key) }
+        }
+        var result = GraphSnapshot()
+        result.executions = full.executions.filter { record in
+            changed.contains(record.identity.stableID)
+                || record.parent.map { added.contains($0.stableID) } == true
+                || record.responsible.map { added.contains($0.stableID) } == true
+        }
+        let resent = Set(result.executions.map(\.identity.stableID))
+        result.sessions = full.sessions.filter { sessions[$0.id] != $0 }
+        let changedSessions = Set(result.sessions.map(\.id))
+        result.edges = full.edges.filter { edge in
+            !edges.contains(edge) || resent.contains(edge.parent.stableID) || resent.contains(edge.child.stableID)
+        }
+        result.associations = full.associations.filter { association in
+            !associations.contains(association) || resent.contains(association.execution.stableID)
+                || changedSessions.contains(association.sessionID)
+        }
+        return result
     }
 }

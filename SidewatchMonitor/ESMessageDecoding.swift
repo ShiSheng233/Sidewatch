@@ -129,6 +129,27 @@ enum ESMessageDecoder {
 
     // MARK: - Processes
 
+    /// The acting process's execution identity only, without copying any strings. File
+    /// notifications use it to decide whether the full message needs decoding.
+    static func identity(of message: UnsafePointer<es_message_t>, bootID: String) -> ExecutionIdentity {
+        let process = message.pointee.process
+        let token = process.pointee.audit_token
+        return ExecutionIdentity(
+            process: ProcessIdentity(
+                bootID: bootID,
+                pid: audit_token_to_pid(token),
+                startTimeMicros: processStartMicros(process, messageVersion: message.pointee.version)
+            ),
+            version: UInt32(bitPattern: audit_token_to_pidversion(token))
+        )
+    }
+
+    /// Sequence and time only, for a message that is otherwise skipped.
+    static func header(_ message: UnsafePointer<es_message_t>) -> (occurredAt: Date, globalSequence: UInt64?) {
+        (eventDate(message.pointee.time),
+         message.pointee.version >= 4 ? message.pointee.global_seq_num : nil)
+    }
+
     private static func processSnapshot(
         _ process: UnsafePointer<es_process_t>,
         bootID: String,

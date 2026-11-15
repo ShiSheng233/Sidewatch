@@ -519,7 +519,10 @@ final class ActivityStore: @unchecked Sendable {
         for record in batch.graph.executions {
             _ = try ensureExecution(db, record, state: &state)
         }
-        try closeSupersededSnapshotPlaceholders(db, graph: batch.graph)
+        if !batch.graph.executions.isEmpty {
+            try closeSupersededSnapshotPlaceholders(
+                db, executions: batch.currentExecutions ?? batch.graph.executions)
+        }
 
         // Link parent and responsible identity columns to known nodes. Unknown
         // identities remain only as their recorded tokens; no parent node is
@@ -873,13 +876,13 @@ final class ActivityStore: @unchecked Sendable {
     /// of synthetic placeholders rather than to the whole graph in every batch.
     private static func closeSupersededSnapshotPlaceholders(
         _ db: Database,
-        graph: GraphSnapshot
+        executions: [ExecutionRecord]
     ) throws {
         let observedByProcess = Dictionary(
-            grouping: graph.executions.filter { $0.evidence == .observed },
+            grouping: executions.filter { $0.evidence == .observed },
             by: \.identity.process)
         guard !observedByProcess.isEmpty else { return }
-        let present = Set(graph.executions.map(\.identity.stableID))
+        let present = Set(executions.map(\.identity.stableID))
 
         let rows: [Row] = try Row.fetchAll(db, sql: """
             SELECT e.id AS id, e.pidversion AS pidversion,

@@ -200,7 +200,11 @@ struct GraphSnapshot: Codable, Sendable {
 
 struct IngestionBatch: Codable, Sendable {
     var capture: CaptureRecord
+    /// Graph rows to upsert. Ingestion sends only rows that changed since the last commit.
     var graph: GraphSnapshot
+    /// Every execution the engine currently holds, when `graph` is a delta. Snapshot
+    /// placeholders are closed against this complete set, never against the delta.
+    var currentExecutions: [ExecutionRecord]? = nil
     var activities: [ActivityRecord] = []
     var endpoints: [ListeningEndpoint] = []
     var gaps: [CollectionGap] = []
